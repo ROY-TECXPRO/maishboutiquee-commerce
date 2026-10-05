@@ -88,8 +88,24 @@
   ExpiresByType text/plain                "access plus 1 day"
 </IfModule>
 <IfModule mod_headers.c>
-  # Fingerprinted build output
-  <FilesMatch "\.(js|mjs|css|woff2?|webp|avif|png|jpe?g|svg|ico)$">
+  # PRODUCT IMAGES must NOT be "immutable".
+  #
+  # Only Vite's fingerprinted bundles (/assets/*) are safe to cache forever.
+  # Product photos under /images/ have stable filenames, so a 1-year
+  # immutable cache made a deleted or replaced image keep rendering from the
+  # browser cache long after it was gone from the server. These now revalidate
+  # on every visit, so an admin save/delete shows up on the next page load.
+  <FilesMatch "^images/.*\.(webp|avif|png|jpe?g|gif|svg)$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+
+  # Fingerprinted build output (safe forever: the filename changes when the
+  # content changes). Images are excluded above and handled here only when
+  # they are NOT under /images/.
+  <FilesMatch "\.(js|mjs|css|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "^assets/.*\.(webp|avif|png|jpe?g|gif|svg|ico)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
   # SEO + service worker files must stay fresh

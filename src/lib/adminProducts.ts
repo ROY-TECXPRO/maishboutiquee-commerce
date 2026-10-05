@@ -126,7 +126,12 @@ export async function uploadProductImage(file: File): Promise<string> {
   const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const { error } = await supabase.storage.from('maish-product-images').upload(path, file, {
-    cacheControl: '31536000',
+    // Must NOT be a 1-year immutable cache. Product images are served from a
+    // stable path, so a long immutable cache meant a replaced or deleted image
+    // kept rendering from the browser cache after the dashboard was updated -
+    // the "broken/stale image on the site" symptom. 'no-cache' forces the
+    // browser to revalidate, so a save is visible on the very next load.
+    cacheControl: 'no-cache, must-revalidate',
     upsert: false,
   });
 

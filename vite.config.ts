@@ -91,7 +91,19 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg,woff,woff2}"],
+        // CRITICAL: only the APP SHELL is precached - never the product images.
+        //
+        // Previously this glob matched every .webp/.jpg/.png under public/images,
+        // so 593 of 617 precache entries were product photos. Workbox serves those
+        // CacheFirst from the precache and never asks the network again, so an
+        // image the admin deleted in the dashboard stayed on screen until the
+        // user cleared site data - the "deleted on the dashboard but still on the
+        // site" symptom.
+        //
+        // Images are now fetched at runtime via the NetworkFirst rule below, so a
+        // save/delete in the dashboard is reflected on the very next load.
+        globPatterns: ["**/*.{js,css,html,ico,woff,woff2}"],
+        globIgnores: ["**/images/**"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
 
         // --- Guaranteed fresh updates for installed users -------------------
@@ -110,6 +122,31 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/api\//, /^\/rest\//],
 
         runtimeCaching: [
+          // PRODUCT IMAGES - the fix for "deleted in admin, still on the site".
+          //
+          // NetworkFirst (not CacheFirst) means every image request goes to the
+          // network first; the cache is only a fallback when offline. So the
+          // moment an admin saves or deletes an image, the next page load shows
+          // the new state. Matches both locally hosted /images/* and images
+          // served from the Supabase storage bucket.
+          {
+            urlPattern: ({ request, url }) =>
+              request.destination === 'image' ||
+              /\.(?:webp|jpe?g|png|gif|avif|svg)$/i.test(url.pathname),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "product-images",
+              networkTimeoutSeconds: 4,
+              expiration: {
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 60 * 24 * 7,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+
           // Supabase API: network-first with an offline fallback. Caching this
           // CacheFirst would serve a stale product list or, worse, replay a
           // cached response after an order changes, so the data must be fresh.
