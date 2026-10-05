@@ -3,11 +3,12 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 permissions:
-  contents: write
+  # Least privilege. The build job needs nothing but read access.
+  contents: read
   pages: write
   id-token: write
 

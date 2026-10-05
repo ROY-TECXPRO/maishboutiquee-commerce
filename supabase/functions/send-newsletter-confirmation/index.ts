@@ -8,24 +8,91 @@ interface RequestBody {
   email: string;
 }
 
+const ALLOWED_ORIGINS = [
+  'https://maishfashionboutique.co.ke',
+  'https://www.maishfashionboutique.co.ke',
+];
+
+// Basic per-isolate rate limit. This is intentionally simple: the point is to
+// stop trivial "call it in a loop" abuse of the service_role write and the
+// Resend quota, not to be a substitute for Supabase's edge rate limiting.
+const RATE_LIMIT = 5;
+const WINDOW_MS = 60_000;
+const hits = new Map<string, { count: number; resetAt: number }>();
+
+const rateLimited = (key: string): boolean => {
+  const now = Date.now();
+  const entry = hits.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    hits.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    return false;
+  }
+
+  entry.count += 1;
+  return entry.count > RATE_LIMIT;
+};
+
+const corsHeaders = (origin: string | null) => ({
+  'Access-Control-Allow-Origin': origin && ALLOWED_ORIGINS.includes(origin) ? origin : '',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'content-type',
+  'Vary': 'Origin',
+});
+
+// Deliberately permissive but anchored: a syntactically valid, plausible
+// address. The service_role update below is the thing that must never be
+// reachable with arbitrary input.
+const isValidEmail = (value: unknown): value is string =>
+  typeof value === 'string' &&
+  value.length <= 254 &&
+  /^[^\s@,;:<>()[\]\\]+@[^\s@.,;:<>()[\]\\]+(\.[^\s@.,;:<>()[\]\\]+)+$/.test(value);
+
 serve(async (req: Request) => {
+  const origin = req.headers.get('origin');
+  const cors = corsHeaders(origin);
+
   // Only allow POST requests
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...cors, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Browser preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: cors });
+  }
+
+  // Reject cross-site callers outright. This endpoint writes with the
+  // service_role key, so it must not be usable as an open relay.
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    return new Response(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
+      headers: { ...cors, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const clientKey = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (rateLimited(clientKey)) {
+    return new Response(JSON.stringify({ error: 'Too many requests' }), {
+      status: 429,
+      headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
 
   try {
     const { email } = await req.json() as RequestBody;
 
-    if (!email) {
-      return new Response(JSON.stringify({ error: 'Email is required' }), {
+    if (!isValidEmail(email)) {
+      return new Response(JSON.stringify({ error: 'A valid email address is required' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...cors, 'Content-Type': 'application/json' },
       });
     }
+
+    const normalisedEmail = email.trim().toLowerCase();
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -34,7 +101,7 @@ serve(async (req: Request) => {
     if (!supabaseUrl || !supabaseServiceKey) {
       return new Response(JSON.stringify({ error: 'Missing environment variables' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...cors, 'Content-Type': 'application/json' },
       });
     }
 
@@ -44,13 +111,13 @@ serve(async (req: Request) => {
     const { error: updateError } = await supabase
       .from('newsletter_subscribers')
       .update({ confirmed: true, confirmed_at: new Date().toISOString() })
-      .eq('email', email.toLowerCase());
+      .eq('email', normalisedEmail);
 
     if (updateError) {
       console.error('Error updating subscriber:', updateError);
       return new Response(JSON.stringify({ error: 'Failed to confirm subscription' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...cors, 'Content-Type': 'application/json' },
       });
     }
 
@@ -65,7 +132,7 @@ serve(async (req: Request) => {
         message: 'Subscription confirmed (email service not configured)' 
       }), {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...cors, 'Content-Type': 'application/json' },
       });
     }
 
@@ -129,7 +196,7 @@ serve(async (req: Request) => {
       },
       body: JSON.stringify({
         from: 'Maish Boutique <newsletter@maishboutique.com>',
-        to: email,
+        to: normalisedEmail,
         subject: '🎉 Welcome to Maish Boutique! Your 10% Discount Code Inside',
         html: emailHtml,
       }),
@@ -146,14 +213,14 @@ serve(async (req: Request) => {
       message: 'Confirmation email sent' 
     }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...cors, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Function error:', error);
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
 });

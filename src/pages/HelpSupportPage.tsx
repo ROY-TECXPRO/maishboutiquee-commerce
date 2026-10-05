@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, HelpCircle, MessageCircle, Phone, Mail, ChevronDown, ChevronUp, ShoppingBag, CreditCard, Truck, RefreshCw, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { safeInternalPath } from '@/lib/supabase';
 
 const HelpSupportPage: React.FC = () => {
   const navigate = useNavigate();
@@ -118,7 +119,7 @@ const HelpSupportPage: React.FC = () => {
           ].map((item, index) => (
             <button
               key={index}
-              onClick={item.action || (() => navigate(item.href || '/'))}
+              onClick={item.action || (() => navigate(safeInternalPath(item.href, '/')))}
               className="flex flex-col items-center gap-2 p-4 bg-card rounded-xl border border-border hover:border-primary transition-colors"
             >
               <item.icon className="w-6 h-6 text-primary" />

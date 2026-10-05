@@ -324,10 +324,18 @@ Ready to process!`;
                                 Contact Customer
                               </Button>
                             ) : (
-                              // User actions: Cancel order or Mark as delivered
+                              // User actions: Cancel order only.
+                              // "Mark as delivered" was removed deliberately:
+                              // the protect_order_state() trigger now rejects any
+                              // customer-authored status other than 'cancelled',
+                              // so a shopper can no longer forge proof of delivery
+                              // (or a paid balance) on a cash-on-delivery order.
+                              // Only staff can set delivery status.
                               <div className="flex gap-2">
-                                {order.status !== 'cancelled' && order.status !== 'delivered' && (
-                                  <>
+                                {order.status !== 'cancelled' &&
+                                  order.status !== 'delivered' &&
+                                  (order.status === 'pending' ||
+                                    order.status === 'processing') && (
                                     <Button
                                       size="sm"
                                       variant="outline"
@@ -339,22 +347,9 @@ Ready to process!`;
                                       className="text-red-600 border-red-200 hover:bg-red-50"
                                     >
                                       <XCircle className="w-4 h-4 mr-1" />
-                                      Cancel
+                                      Cancel Order
                                     </Button>
-                                    <Button
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        updateOrderStatus(order.id, 'delivered');
-                                        toast.success('Order marked as delivered');
-                                      }}
-                                      className="bg-green-600 hover:bg-green-700"
-                                    >
-                                      <CheckCircle2 className="w-4 h-4 mr-1" />
-                                      Delivered
-                                    </Button>
-                                  </>
-                                )}
+                                  )}
                               </div>
                             )}
                           </div>

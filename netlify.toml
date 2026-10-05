@@ -5,6 +5,9 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Single-page-app fallback. Real files (sitemap.xml, robots.txt, images, assets)
+# are served by Netlify before this rule runs, so the generated sitemap and
+# robots.txt are returned verbatim instead of being swallowed by index.html.
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -14,9 +17,30 @@
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+    # Long-lived HTTPS-only; Netlify already auto-injects the preload header.
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Cross-Origin-Opener-Policy = "same-origin"
+    # Content-Security-Policy: the strongest XSS control available to a static
+    # host. 'unsafe-inline' is still required for style-src because the chart
+    # component injects a <style> block and Vite inlines critical CSS; script-src
+    # stays strict (only 'self' plus the two script origins actually used).
+    # object-src 'none' blocks plugin/embed content outright.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://maps.googleapis.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://maps.googleapis.com https://maps.gstatic.com https://images.unsplash.com https://www.googletagmanager.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://maps.googleapis.com https://www.google-analytics.com https://region1.google-analytics.com; frame-src 'self' https://www.google.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Content-Type = "application/xml; charset=utf-8"
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+    Cache-Control = "public, max-age=3600"
 
 [[headers]]
   for = "/assets/*"

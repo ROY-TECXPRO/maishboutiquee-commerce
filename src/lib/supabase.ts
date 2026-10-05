@@ -1,16 +1,32 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Supabase credentials — read from environment, falling back to the
-// current project so this keeps working even before env vars are set
-// on Netlify. This is a Vite project, so variables MUST be prefixed
-// VITE_ (not NEXT_PUBLIC_ — that prefix is a Next.js convention and
-// Vite will not expose it to the browser at all).
+// Supabase credentials — read from the build environment ONLY.
+//
+// SECURITY: there is deliberately no hardcoded fallback key here. Anything in
+// this file is published to GitHub and shipped inside the public JS bundle.
+// The anon/publishable key is designed to be visible, but hardcoding it still
+// prevents rotation and hides the fact that it is unset on some deploys.
 //
 // Set these in Netlify: Site settings > Environment variables
-//   VITE_SUPABASE_URL=https://xttlmtwoenntqbrhkkox.supabase.co
+//   VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 //   VITE_SUPABASE_ANON_KEY=<the publishable/anon key from Project Settings > API>
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://xttlmtwoenntqbrhkkox.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_2k-nZG-0M3F_8CmBt41HNw_1JXX4Jhj';
+//
+// These are the *public* keys (safe in the browser, protected by Row Level
+// Security). The service-role / secret key bypasses RLS entirely and must
+// never be referenced from client code or committed — it belongs in
+// .env.migration for server-side scripts only.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  // Fail loudly and early rather than silently building a client that
+  // authenticates against nothing.
+  throw new Error(
+    'Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. ' +
+      'Set them in .env for local development and in your host\'s ' +
+      'environment-variable settings for production.',
+  );
+}
 
 // Custom fetch with timeout
 const fetchWithTimeout = (url: string | URL | Request, options: RequestInit = {}): Promise<Response> => {
@@ -47,6 +63,39 @@ const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 export { supabase };
+
+/**
+ * Confine an in-app link target to this origin.
+ *
+ * React Router 6 is affected by GHSA-wrjc-x8rr-h8h6 (open redirect through a
+ * backslash-prefixed path) and GHSA-2j2x-hqr9-3h42 (protocol-relative "//host"
+ * reinterpretation). The patched release is a v7 major upgrade, so rather than
+ * take that on in a security pass, every navigation target is passed through
+ * this guard: anything protocol-relative, backslash-prefixed, or schemed is
+ * rejected and the caller falls back to a known-good internal path. This makes
+ * the redirect unreachable regardless of the router version in use.
+ */
+export const safeInternalPath = (target: unknown, fallback = '/'): string => {
+  if (typeof target !== 'string') return fallback;
+
+  const value = target.trim();
+  if (value.length === 0) return fallback;
+
+  // Protocol-relative or backslash-prefixed. A leading backslash is the
+  // CVE-2025-68470 bypass: browsers normalise "\evil.example" into
+  // "//evil.example", which resolves off-origin. Reject runs of 2+ slashes or
+  // backslashes, and any lone leading backslash.
+  if (/^[/\\]{2,}/.test(value)) return fallback;
+  if (value.startsWith('\\')) return fallback;
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value)) return fallback;
+
+  // Control characters can be used to smuggle a scheme past a naive check.
+  // eslint-disable-next-line no-control-regex -- matching control bytes here is the point
+  if (/[\u0000-\u001f\u007f]/.test(value)) return fallback;
+
+  // Otherwise it is an in-app path ("/orders", "./x", "orders").
+  return value;
+};
 
 // Database types
 export interface Order {
@@ -160,12 +209,18 @@ export const getOrders = async () => {
   }
 };
 
+// Escape the LIKE metacharacters so a caller-supplied string cannot widen
+// the pattern. Without this, a phone of "%" would match every order the RLS
+// policy would otherwise allow.
+const escapeLikePattern = (value: string) =>
+  value.replace(/([\\%_])/g, '\\$1');
+
 export const getOrdersByPhone = async (phone: string) => {
   try {
     const { data: orders, error } = await supabase
       .from('orders')
       .select('*')
-      .ilike('customer_phone', `%${phone}%`)
+      .ilike('customer_phone', `%${escapeLikePattern(phone.trim())}%`)
       .order('created_at', { ascending: false });
 
     if (error) {

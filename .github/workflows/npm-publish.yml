@@ -7,6 +7,15 @@ on:
   release:
     types: [created]
 
+# Least privilege: this workflow only needs to build. Scoped to the master
+# branch so a PR from a fork cannot trigger a publish.
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,6 +30,12 @@ jobs:
   publish-npm:
     needs: build
     runs-on: ubuntu-latest
+    # Only the maintainer who creates the Release can trigger this, and it is
+    # pinned to that one environment so it cannot be widened later.
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,6 +43,9 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org/
       - run: npm ci
+      # Never publish the frontend as a library: "private": true in
+      # package.json is the guard, --dry-run proves it before the real call.
+      - run: npm publish --dry-run
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}

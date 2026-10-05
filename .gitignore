@@ -30,3 +30,32 @@ dist-ssr
 
 # Generated seed SQL (rebuild with: npm run seed:generate)
 supabase/seed-batches/
+
+# --- Security hardening (added after a secret-exposure audit) ------------------
+# Supabase CLI local state: contains the project ref, the Postgres pooler
+# connection string (host + superuser name) and the organisation id.
+# Infrastructure reconnaissance; it must never reach a public repository.
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+
+# Additional local env files
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+
+# Build output and archives that must never be published. dist/adminupdate.zip
+# was a 112MB full-source archive sitting inside the deployable folder.
+dist
+*.zip
+
+# Tooling caches / incremental build metadata
+*.tsbuildinfo
+.eslintcache
+
+# Editor/agent scratch worktrees. These hold full stale copies of the source
+# tree, including previously-committed credentials, and must never be
+# committed or uploaded.
+.kilo/
