@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DesktopHeader } from '@/components/navigation/DesktopHeader';
 import { BottomNav } from '@/components/navigation/BottomNav';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { UpdatePrompt } from '@/registerServiceWorker';
 import { Footer } from '@/components/layout/Footer';
 import OfferBanner from '@/components/ui/OfferBanner';
 import { useCart } from '@/context/CartContext';
@@ -41,6 +42,7 @@ export const Layout: React.FC = () => {
       <Footer />
       <BottomNav />
       <InstallPrompt />
+      <UpdatePrompt />
     </div>
   );
 };

@@ -45,10 +45,20 @@
     <meta name="twitter:image:alt" content="Maish Fashion Boutique" />
     
     <!-- Icons --> 
-    <link rel="icon" type="image/webp" href="/App-icon.webp" />
-    <link rel="apple-touch-icon" href="/App-icon.webp" />
-    <link rel="mask-icon" href="/App-icon.webp" color="#d84a1b" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+    <!-- iOS ignores the web manifest and reads this instead. It must be a
+         square PNG; the old /App-icon.webp is a 3508x2480 landscape image
+         (despite the extension it is really a PNG), which iOS letterboxed. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="mask-icon" href="/images/icons/maskable-icon.svg" color="#d84a1b" />
+    <!-- No manifest link is written here on purpose: vite-plugin-pwa
+         generates /manifest.webmanifest from the `manifest` block in
+         vite.config.ts and injects the link automatically. A second,
+         hand-written link used to sit alongside it, and two manifest links
+         make the browser pick one non-deterministically, which was part of
+         why the install prompt never fired. The old /manifest.json file has
+         been deleted for the same reason. -->
     
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

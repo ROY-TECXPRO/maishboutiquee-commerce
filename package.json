@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "generate:seo": "tsx scripts/generate-seo-files.ts",
+"generate:icons": "tsx scripts/generate-icons.ts",
     "prebuild": "npm run generate:seo",
     "build": "vite build",
     "build:dev": "npm run generate:seo && vite build --mode development",

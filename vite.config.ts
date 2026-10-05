@@ -40,7 +40,13 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg", "images/icons/*.svg", "App-icon.webp"],
+      injectRegister: null,
+      includeAssets: [
+        "favicon.ico",
+        "icons/*.png",
+        "images/icons/*.svg",
+        "App-icon.webp",
+      ],
       manifest: {
         name: "Maish Fashion Boutique",
         short_name: "Maish Fashion",
@@ -52,31 +58,77 @@ export default defineConfig(({ mode }) => ({
         scope: './',
         start_url: './',
         categories: ["shopping", "fashion", "lifestyle"],
+        // Real, genuinely square PNGs. The previous entries declared
+        // "192x192"/"512x512" but pointed at 594x420 and 3508x2480 landscape
+        // files, so the browser stretched them and Chrome refused to fire
+        // `beforeinstallprompt` - which is why no install banner ever appeared.
+        // Regenerate with: npm run generate:icons
         icons: [
           {
-            src: './images/icons/maskable-icon.svg',
-            sizes: "any",
-            type: "image/svg+xml",
-            purpose: "any maskable",
-          },
-          {
-            src: './Maish-logo-light-mode.webp',
+            src: './icons/icon-192.png',
             sizes: "192x192",
-            type: "image/webp",
+            type: "image/png",
             purpose: "any",
           },
           {
-            src: './Maish-logo-light-mode.webp',
+            src: './icons/icon-512.png',
             sizes: "512x512",
-            type: "image/webp",
+            type: "image/png",
             purpose: "any",
+          },
+          {
+            src: './icons/icon-192-maskable.png',
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: './icons/icon-512-maskable.png',
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
           },
         ],
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg,woff,woff2}"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
+
+        // --- Guaranteed fresh updates for installed users -------------------
+        // A service worker only re-checks sw.js on navigation, and it honours
+        // the HTTP cache unless told otherwise. These settings make "refresh
+        // and get the new version" reliable:
+        //
+        //   navigateFallback (below) - navigations resolve to the precached
+        //     index.html, which is refreshed in lockstep with the new worker
+        //     because skipWaiting + clientsClaim take effect immediately, so
+        //     a refresh lands on the new app shell rather than a stale one.
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//, /^\/rest\//],
+
         runtimeCaching: [
+          // Supabase API: network-first with an offline fallback. Caching this
+          // CacheFirst would serve a stale product list or, worse, replay a
+          // cached response after an order changes, so the data must be fresh.
+          // Stale entries are only used when the network is unavailable.
+          {
+            urlPattern: /^https:\/\/[a-z0-9-]+\.supabase\.co\/(rest|storage)\//i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "supabase-api",
+              networkTimeoutSeconds: 5,
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
           {
             urlPattern: /^https:\/\/images\.unsplash\.com\/.*/i,
             handler: "CacheFirst",
