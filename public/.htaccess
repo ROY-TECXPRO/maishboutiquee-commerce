@@ -108,15 +108,35 @@
 
   # Never let the server hand out source maps, dotfiles, or the raw .env /
   # .sql schema files if they ever end up in the web root.
-  <FilesMatch "^\.|(\.(sql|log|md|example|ts|tsx|map)$)">
-    Require all denied
-  </FilesMatch>
+  #
+  # HostPinnacle/cPanel still runs Apache 2.2 on some shared plans, where
+  # "Require all denied" is unknown and produces a 500 on EVERY request -
+  # taking the whole site down. mod_authz_host is the 2.4 module that owns
+  # "Require"; if it is absent we skip the rule rather than break the site.
+  <IfModule mod_authz_host.c>
+    <FilesMatch "^\.|(\.(sql|log|md|example|ts|tsx|map)$)">
+      Require all denied
+    </FilesMatch>
+  </IfModule>
+
+  # Same rule in Apache 2.2 syntax, for older shared hosts.
+  <IfModule !mod_authz_host.c>
+    <FilesMatch "^\.|(\.(sql|log|md|example|ts|tsx|map)$)">
+      Order allow,deny
+      Deny from all
+    </FilesMatch>
+  </IfModule>
 </IfModule>
 
 # --- 6. Service worker must never be cached by the CDN/browser ---------------
-<FilesMatch "sw\.js$">
-  Header set Cache-Control "no-cache, no-store, must-revalidate"
-</FilesMatch>
+# "Header" belongs to mod_headers. On a host without it this directive is a
+# startup error and Apache serves 500 for every request, so guard it - the
+# rule below is an optimisation, not a correctness requirement.
+<IfModule mod_headers.c>
+  <FilesMatch "sw\.js$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+</IfModule>
 
 # --- 7. 404 handling ----------------------------------------------------------
 # Any request that reaches here and does not exist falls back to the SPA so the
