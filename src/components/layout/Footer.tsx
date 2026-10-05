@@ -113,7 +113,7 @@ export const Footer: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-8">
             {/* Shop */}
             <div>
-              <h4 className="font-semibold mb-3">Shop</h4>
+              <h2 className="font-semibold mb-3">Shop</h2>
               <ul className="space-y-2">
                 {footerLinks.shop.map((link) => (
                   <li key={link.href}>
@@ -130,7 +130,7 @@ export const Footer: React.FC = () => {
 
             {/* Help */}
             <div>
-              <h4 className="font-semibold mb-3">Help</h4>
+              <h2 className="font-semibold mb-3">Help</h2>
               <ul className="space-y-2">
                 {footerLinks.help.map((link) => (
                   <li key={link.label}>
@@ -156,7 +156,7 @@ export const Footer: React.FC = () => {
 
             {/* Company */}
             <div>
-              <h4 className="font-semibold mb-3">Company</h4>
+              <h2 className="font-semibold mb-3">Company</h2>
               <ul className="space-y-2">
                 {footerLinks.company.map((link) => (
                   <li key={link.label}>
@@ -182,7 +182,7 @@ export const Footer: React.FC = () => {
 
             {/* Contact */}
             <div>
-              <h4 className="font-semibold mb-3">Contact Us</h4>
+              <h2 className="font-semibold mb-3">Contact Us</h2>
               <ul className="space-y-2.5">
                 <li className="flex items-start gap-2.5 text-muted-foreground text-sm">
                   <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />

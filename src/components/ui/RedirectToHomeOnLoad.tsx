@@ -2,6 +2,26 @@ import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 /**
+ * User agents that must be allowed to render the real route.
+ *
+ * Without this exception, a crawler requesting /product/<id> or
+ * /category/<slug> is bounced to "/" and therefore only ever sees the
+ * homepage. That makes every product and category URL an unindexable
+ * duplicate of the homepage, which was the single biggest SEO defect on
+ * this site. The content served to crawlers is the same content a human
+ * sees once they navigate — nothing is hidden from them.
+ */
+const CRAWLER_PATTERN =
+  /googlebot|google-inspectiontool|bingbot|bingpreview|slurp|duckduckbot|baiduspider|yandex(bot)?|sogou|exabot|facebot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|telegrambot|whatsapp|pinterest|applebot|semrushbot|ahrefsbot|mj12bot|dotbot|petalbot|bytespider|gptbot|ccbot|claudebot|perplexitybot/i;
+
+export function isCrawlerUserAgent(
+  userAgent: string | undefined | null
+): boolean {
+  if (!userAgent) return false;
+  return CRAWLER_PATTERN.test(userAgent);
+}
+
+/**
  * Sends the user to the home page when the app is (re)loaded on any page
  * other than "/".
  *
@@ -28,6 +48,10 @@ export function RedirectToHomeOnLoad() {
   useEffect(() => {
     if (hasChecked.current) return;
     hasChecked.current = true;
+
+    // Search engines must be able to fetch and render deep links directly,
+    // otherwise every product/category URL is indexed as the homepage.
+    if (isCrawlerUserAgent(navigator.userAgent)) return;
 
     if (pathname !== '/' && !PRESERVED_PATHS.includes(pathname)) {
       // `replace` so the back button does not bounce the user straight back

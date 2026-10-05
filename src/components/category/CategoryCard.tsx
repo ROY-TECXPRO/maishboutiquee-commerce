@@ -22,9 +22,11 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ category, variant = 
           variant === 'large' && 'aspect-[4/5] md:aspect-[3/4]'
         )}
       >
+        {/* Decorative: the category name is rendered as the heading directly
+            below, so repeating it in alt text duplicates the link's name. */}
         <img
           src={category.image}
-          alt={category.name}
+          alt=""
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           loading="lazy"
         />

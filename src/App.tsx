@@ -11,6 +11,7 @@ import { Layout } from "@/components/layout/Layout";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { RedirectToHomeOnLoad } from "@/components/ui/RedirectToHomeOnLoad";
+import { RouteSeo } from "@/components/seo/RouteSeo";
 import HomePage from "./pages/HomePage";
 import CategoryPage from "./pages/CategoryPage";
 import CategoriesPage from "./pages/CategoriesPage";
@@ -53,6 +54,7 @@ const App = () => (
                 <ScrollToTop />
                 <RedirectToHomeOnLoad />
                 <PageLoader />
+                <RouteSeo />
                 <Routes>
                   {/* Admin routes render outside the storefront Layout (no nav/footer/promo banner) */}
                   <Route path="/admin/login" element={<AdminLoginPage />} />

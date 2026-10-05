@@ -26,7 +26,9 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ review }) => {
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h4 className="font-medium text-sm truncate">{review.name}</h4>
+            {/* h3, not h4: these sit directly under the section's h2, so h4
+                skipped a level and broke the document heading order. */}
+            <h3 className="font-medium text-sm truncate">{review.name}</h3>
             {review.verified && (
               <span className="flex items-center gap-0.5 text-success text-xs whitespace-nowrap">
                 <CheckCircle className="w-3 h-3" />

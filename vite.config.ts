@@ -5,8 +5,29 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
+//
+// DEPLOYMENT TARGET: shared hosting (cPanel / HostPinnacle) -> upload dist/* to public_html
+//
+// `base` controls how the built HTML *references* its own assets. It has
+// nothing to do with which web server hosts the files, so cPanel/Apache
+// supports either value. What decides it is WHERE the site is mounted:
+//
+//   base: '/'   -> assets are referenced as /assets/...  (site at domain root)
+//   base: './'  -> assets are referenced as ./assets/... (site in a SUBFOLDER)
+//
+// For a React Router SPA, '/' is the only safe value at the domain root.
+// With './' the browser resolves ./assets/index-*.js against the *current*
+// URL, so opening /product/women-dress-001 requests
+// /product/assets/index-*.js, which the SPA rewrite turns into index.html.
+// The browser then rejects the module (text/html is not valid JavaScript)
+// and the page renders blank. Verified: that is exactly what broke this site.
+//
+// Subfolder deployments (e.g. example.com/shop/) can still opt in:
+//   VITE_BASE_PATH=./ npm run build
+export const BASE_PATH = process.env.VITE_BASE_PATH?.trim() || '/';
+
 export default defineConfig(({ mode }) => ({
-  base: './',
+  base: BASE_PATH,
   server: {
     host: "::",
     port: 5173,

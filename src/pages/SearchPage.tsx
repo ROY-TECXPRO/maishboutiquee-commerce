@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search as SearchIcon, X, TrendingUp, Clock, ArrowLeft, SlidersHorizontal } from 'lucide-react';
 import { searchProducts, categories, products } from '@/data/products';
@@ -256,9 +256,11 @@ const SearchPage: React.FC = () => {
                 <h3 className="font-medium mb-3">Browse Categories</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {categories.slice(0, 6).map(cat => (
-                    <button
+                    /* Real <a href> so crawlers can follow these category
+                       links; a click handler alone is not discoverable. */
+                    <Link
                       key={cat.id}
-                      onClick={() => navigate(`/category/${cat.id}`)}
+                      to={`/category/${cat.id}`}
                       className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-primary transition-colors text-left"
                     >
                       <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-lg">
@@ -270,7 +272,7 @@ const SearchPage: React.FC = () => {
                           {products.filter(p => p.category === cat.id).length} items
                         </p>
                       </div>
-                    </button>
+                    </Link>
                   ))}
                 </div>
               </div>

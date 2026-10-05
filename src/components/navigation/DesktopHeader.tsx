@@ -80,21 +80,26 @@ export const DesktopHeader: React.FC = () => {
             </button>
 
             {/* Logo - Centered on mobile */}
-            <Link to="/" className="flex items-center gap-2 md:justify-start justify-center flex-1 md:flex-none absolute left-1/2 md:relative md:left-0 transform md:transform-none -translate-x-1/2 md:translate-x-0">
+            {/* aria-label is required because both logo images are decorative
+                (alt="") and the wordmark is visually hidden below the sm
+                breakpoint — without it this link has no accessible name. */}
+            <Link to="/" aria-label="Maish Fashion Boutique - home" className="flex items-center gap-2 md:justify-start justify-center flex-1 md:flex-none absolute left-1/2 md:relative md:left-0 transform md:transform-none -translate-x-1/2 md:translate-x-0">
               {/* Dark mode logo - shows when isDark is true */}
               <img 
-                src="/maish-logo-dark-mode.webp" 
-                alt="Maish Fashion Boutique" 
+                src="/maish-logo-dark-mode.webp"
+                alt=""
                 className={`h-10 w-auto md:h-12 object-contain ${isDark ? 'block' : 'hidden'} dark:block`}
               />
               {/* Light mode logo - shows when isDark is false */}
               <img 
-                src="/Maish-logo-light-mode.webp" 
-                alt="Maish Fashion Boutique" 
+                src="/Maish-logo-light-mode.webp"
+                alt=""
                 className={`h-10 w-auto md:h-12 object-contain ${isDark ? 'hidden' : 'block'} dark:hidden`}
               />
               <div className="hidden sm:block">
-                <h1 className="font-display font-bold text-lg md:text-xl leading-tight">Maish Fashion</h1>
+                {/* Not an <h1>: the site logo must not compete with each page's
+                    own <h1> for the document's single top-level heading. */}
+                <p className="font-display font-bold text-lg md:text-xl leading-tight">Maish Fashion</p>
                 <p className="text-[10px] text-muted-foreground -mt-0.5">Boutique</p>
               </div>
             </Link>
