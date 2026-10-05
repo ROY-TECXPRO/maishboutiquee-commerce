@@ -44,14 +44,10 @@
     <meta name="twitter:image" content="https://maishfashionboutique.co.ke/App-icon.webp" />
     <meta name="twitter:image:alt" content="Maish Fashion Boutique" />
     
-    <!-- Icons --> 
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
-    <!-- iOS ignores the web manifest and reads this instead. It must be a
-         square PNG; the old /App-icon.webp is a 3508x2480 landscape image
-         (despite the extension it is really a PNG), which iOS letterboxed. -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-    <link rel="mask-icon" href="/images/icons/maskable-icon.svg" color="#d84a1b" />
+    <!-- Icons -->
+    <link rel="icon" type="image/webp" href="/App-icon.webp" />
+    <link rel="apple-touch-icon" href="/App-icon.webp" />
+    <link rel="mask-icon" href="/App-icon.webp" color="#d84a1b" />
     <!-- No manifest link is written here on purpose: vite-plugin-pwa
          generates /manifest.webmanifest from the `manifest` block in
          vite.config.ts and injects the link automatically. A second,
