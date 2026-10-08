@@ -1,0 +1,43 @@
+# robots.txt for https://maishfashionboutique.co.ke
+# Public pages are crawlable; private/account/admin routes are blocked so
+# crawlers do not waste budget on them. The matching <meta name="robots">
+# noindex is also emitted at runtime for defence in depth.
+
+User-agent: *
+Allow: /
+
+# Account, checkout and admin surfaces
+Disallow: /admin/
+Disallow: /account
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /wishlist
+Disallow: /addresses
+Disallow: /payments
+Disallow: /notifications
+Disallow: /search
+
+# Build output / PWA internals that should never appear in results
+Disallow: /sw.js
+Disallow: /workbox-
+Disallow: /registerSW.js
+Disallow: /manifest.json
+Disallow: /assets/
+Disallow: /*?*
+
+User-agent: Googlebot
+Allow: /
+Disallow: /admin/
+Disallow: /account
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /wishlist
+Disallow: /addresses
+Disallow: /payments
+Disallow: /notifications
+Disallow: /search
+Disallow: /*?*
+
+Sitemap: https://maishfashionboutique.co.ke/sitemap.xml

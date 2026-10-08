@@ -1,0 +1,161 @@
+# =============================================================================
+# Maish Fashion Boutique — shared hosting config (cPanel / HostPinnacle /
+# Apache / LiteSpeed). Copied verbatim into dist/ by Vite, so it lands in
+# public_html next to index.html.
+#
+# cPanel requirement: "AllowOverride All" must be enabled for the domain,
+# otherwise Apache ignores this file and deep links 404.
+# =============================================================================
+
+# --- 1. Force HTTPS -----------------------------------------------------------
+# Placed FIRST so every later rule only ever sees HTTPS requests. The
+# X-Forwarded-Proto test covers hosts behind a CDN/load balancer.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# --- 2. Correct MIME types ----------------------------------------------------
+# Critical: without an explicit JS type some Apache builds serve .js as
+# text/plain and the browser refuses to execute the bundle.
+<IfModule mod_mime.c>
+  AddType application/javascript      .js
+  AddType application/javascript      .mjs
+  AddType text/css                    .css
+  AddType application/json            .json
+  AddType application/manifest+json   .webmanifest
+  AddType image/webp                  .webp
+  AddType image/avif                  .avif
+  AddType image/svg+xml               .svg
+  AddType font/woff2                  .woff2
+  AddType font/woff                   .woff
+</IfModule>
+
+# --- 3. Compression -----------------------------------------------------------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml
+  AddOutputFilterByType DEFLATE application/javascript application/x-javascript
+  AddOutputFilterByType DEFLATE application/json application/manifest+json
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css text/xml
+  AddOutputFilterByType BROTLI_COMPRESS application/javascript application/json
+  AddOutputFilterByType BROTLI_COMPRESS image/svg+xml
+</IfModule>
+
+# --- 4. SPA routing -----------------------------------------------------------
+# Order matters:
+#   a) real files and directories are served as-is (assets, images, robots.txt,
+#      sitemap.xml, manifest.json, .htaccess)
+#   b) asset-looking requests are never rewritten, so a missing .js/.css yields
+#      an honest 404 instead of an HTML page that breaks module loading
+#   c) everything else is handed to the React Router entry point
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # a) passthrough for anything that genuinely exists
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # b) never rewrite a request for a static asset
+  RewriteRule \.(js|mjs|css|map|json|webmanifest|xml|txt|webp|avif|png|jpe?g|gif|svg|ico|woff2?|ttf|eot|mp4|webm|pdf)$ - [L]
+
+  # c) client-side routes (/product/x, /category/y, /cart, ...) -> index.html
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# --- 5. Caching ---------------------------------------------------------------
+# Vite fingerprints filenames in /assets, so those are safe to cache forever.
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault                          "access plus 1 week"
+  ExpiresByType text/html                 "access plus 0 seconds"
+  ExpiresByType application/javascript     "access plus 1 year"
+  ExpiresByType text/css                  "access plus 1 year"
+  ExpiresByType image/webp                "access plus 1 year"
+  ExpiresByType image/png                 "access plus 1 year"
+  ExpiresByType image/jpeg                "access plus 1 year"
+  ExpiresByType image/svg+xml             "access plus 1 year"
+  ExpiresByType image/avif                "access plus 1 year"
+  ExpiresByType font/woff2                "access plus 1 year"
+  ExpiresByType application/manifest+json "access plus 1 week"
+  ExpiresByType application/xml           "access plus 1 day"
+  ExpiresByType text/plain                "access plus 1 day"
+</IfModule>
+<IfModule mod_headers.c>
+  # PRODUCT IMAGES must NOT be "immutable".
+  #
+  # Only Vite's fingerprinted bundles (/assets/*) are safe to cache forever.
+  # Product photos under /images/ have stable filenames, so a 1-year
+  # immutable cache made a deleted or replaced image keep rendering from the
+  # browser cache long after it was gone from the server. These now revalidate
+  # on every visit, so an admin save/delete shows up on the next page load.
+  <FilesMatch "^images/.*\.(webp|avif|png|jpe?g|gif|svg)$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+
+  # Fingerprinted build output (safe forever: the filename changes when the
+  # content changes). Images are excluded above and handled here only when
+  # they are NOT under /images/.
+  <FilesMatch "\.(js|mjs|css|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "^assets/.*\.(webp|avif|png|jpe?g|gif|svg|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  # SEO + service worker files must stay fresh
+  <FilesMatch "^(robots\.txt|sitemap\.xml|manifest\.json|manifest\.webmanifest|sw\.js|registerSW\.js|workbox-.*\.js)$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+  # Security headers. Kept identical to netlify.toml so both hosts behave the
+  # same. frame-ancestors in the CSP is the modern replacement for
+  # X-Frame-Options and is enforced by every current browser.
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "DENY"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Cross-Origin-Opener-Policy "same-origin"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://maps.googleapis.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://maps.googleapis.com https://maps.gstatic.com https://images.unsplash.com https://www.googletagmanager.com https://*.supabase.co; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://maps.googleapis.com https://www.google-analytics.com https://region1.google-analytics.com; frame-src 'self' https://www.google.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+
+  # Never let the server hand out source maps, dotfiles, or the raw .env /
+  # .sql schema files if they ever end up in the web root.
+  #
+  # HostPinnacle/cPanel still runs Apache 2.2 on some shared plans, where
+  # "Require all denied" is unknown and produces a 500 on EVERY request -
+  # taking the whole site down. mod_authz_host is the 2.4 module that owns
+  # "Require"; if it is absent we skip the rule rather than break the site.
+  <IfModule mod_authz_host.c>
+    <FilesMatch "^\.|(\.(sql|log|md|example|ts|tsx|map)$)">
+      Require all denied
+    </FilesMatch>
+  </IfModule>
+
+  # Same rule in Apache 2.2 syntax, for older shared hosts.
+  <IfModule !mod_authz_host.c>
+    <FilesMatch "^\.|(\.(sql|log|md|example|ts|tsx|map)$)">
+      Order allow,deny
+      Deny from all
+    </FilesMatch>
+  </IfModule>
+</IfModule>
+
+# --- 6. Service worker must never be cached by the CDN/browser ---------------
+# "Header" belongs to mod_headers. On a host without it this directive is a
+# startup error and Apache serves 500 for every request, so guard it - the
+# rule below is an optimisation, not a correctness requirement.
+<IfModule mod_headers.c>
+  <FilesMatch "sw\.js$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# --- 7. 404 handling ----------------------------------------------------------
+# Any request that reaches here and does not exist falls back to the SPA so the
+# React <NotFound/> page renders instead of the host's default error page.
+ErrorDocument 404 /index.html
+
