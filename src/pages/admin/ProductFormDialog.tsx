@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Star } from 'lucide-react';
 import type { CategoryRecord } from '@/types';
 import { slugify, uploadProductImage } from '@/lib/adminProducts';
 import { toast } from 'sonner';
@@ -23,6 +23,8 @@ export interface ProductFormState {
   is_active: boolean;
   is_new: boolean;
   is_sale: boolean;
+  /** Star rating 0–5 (with half-star steps) chosen by the admin. */
+  rating: string;
   /** Comma-separated; empty means the product has no size variants. */
   sizes: string;
   /** Comma-separated "Name|#hex" pairs; empty means no colour variants. */
@@ -43,6 +45,9 @@ export const emptyProductForm: ProductFormState = {
   is_active: true,
   is_new: false,
   is_sale: false,
+  /** Default 5 stars so new products display stars on the storefront
+   * (the admin tunes it afterwards to the rating they see on the floor). */
+  rating: '5',
   sizes: '',
   colors: '',
   images: [],
@@ -264,6 +269,47 @@ export function ProductFormDialog({
               <option value="Unisex">Unisex</option>
             </select>
           </div>
+
+          <div>
+            <Label htmlFor="pf-rating">
+              Star rating <span className="text-muted-foreground">(0–5)</span>
+            </Label>
+            <div className="mt-2 flex flex-wrap items-center gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={cn(
+                    'inline-flex h-9 w-9 items-center justify-center rounded-full border transition',
+                    form.rating === String(n)
+                      ? 'border-amber-500 bg-amber-50 text-amber-600'
+                      : 'border-border bg-white text-muted-foreground hover:border-primary/40 hover:text-foreground',
+                  )}
+                  onClick={() => setForm((prev) => ({ ...prev, rating: String(n) }))}
+                  aria-label={`${n} star${n > 1 ? 's' : ''}`}
+                >
+                  <Star
+                    className="h-4 w-4"
+                    fill={form.rating === String(n) ? 'currentColor' : 'none'}
+                  />
+                </button>
+              ))}
+              <input
+                id="pf-rating"
+                type="number"
+                min={0}
+                max={5}
+                step={0.5}
+                value={form.rating}
+                onChange={(e) => setForm((prev) => ({ ...prev, rating: e.target.value }))}
+                className="w-[46px] rounded-md border border-input px-2 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Pick the stars based on how the item looks on the physical side.
+            </p>
+          </div>
+
 
           <div className="sm:col-span-2">
             <Label htmlFor="pf-sizes">Sizes</Label>

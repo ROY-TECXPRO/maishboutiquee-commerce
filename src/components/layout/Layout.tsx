@@ -8,6 +8,8 @@ import { UpdatePrompt } from '@/registerServiceWorker';
 import { Footer } from '@/components/layout/Footer';
 import OfferBanner from '@/components/ui/OfferBanner';
 import { useCart } from '@/context/CartContext';
+import { CustomerWeekOffer } from '@/components/customer-week/CustomerWeekOffer';
+
 
 export const Layout: React.FC = () => {
   const location = useLocation();
@@ -22,6 +24,8 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+<CustomerWeekOffer />
+
       {showPromoCode && <OfferBanner />}
       <DesktopHeader />
       

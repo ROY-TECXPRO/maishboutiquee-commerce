@@ -76,6 +76,7 @@ export interface ProductInput {
   sizes?: string[];
   /** JSONB array of { name, hex, available }. */
   colors?: Array<{ name: string; hex: string; available: boolean }>;
+  rating?: number;
 }
 
 /** "Nike Air Zoom" -> "nike-air-zoom" (used to auto-fill the unique slug). */

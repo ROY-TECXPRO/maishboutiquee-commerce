@@ -148,6 +148,7 @@ export default function AdminProductsPage() {
       name: p.name,
       sku: p.sku,
       slug: p.slug,
+      rating: p.rating != null ? String(p.rating) : '',
       price: String(p.price),
       original_price: p.original_price != null ? String(p.original_price) : '',
       stock: String(p.stock),
@@ -197,6 +198,7 @@ export default function AdminProductsPage() {
         is_active: form.is_active,
         is_new: form.is_new,
         is_sale: form.is_sale,
+        rating: Number(form.rating) || 0,
         images: form.images,
         // Variants are optional; the storefront treats a product with none as
         // "One Size" / "As supplied" so it stays purchasable either way.
