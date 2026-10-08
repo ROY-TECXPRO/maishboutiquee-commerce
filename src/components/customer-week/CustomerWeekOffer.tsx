@@ -1,5 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+  const location = useLocation();
 import { AnimatePresence, motion } from 'framer-motion';
 import { ShoppingBag, Sparkles, Star, X } from 'lucide-react';
 import { formatPrice } from '@/data/products';
@@ -28,6 +30,8 @@ export function CustomerWeekOffer(): React.JSX.Element {
 
   // Triggered 5 seconds after arrival; remembered per session.
   useEffect(() => {
+  // Not shown on the checkout/cart pages so the purchase flow is uninterrupted.
+  if (location.pathname === '/checkout' || location.pathname === '/cart') return;
     if (sessionStorage.getItem('csw-week-popup-dismissed')) return;
     const isCrawler = /googlebot|bingbot|baiduspider|facebookexternalhit|twitterbot|linkedinbot|whatsapp|pinterest|applebot/i.test(
       navigator.userAgent ?? '',
