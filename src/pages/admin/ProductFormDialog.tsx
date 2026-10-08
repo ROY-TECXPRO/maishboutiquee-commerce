@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Loader2, Star } from 'lucide-react';
 import type { CategoryRecord } from '@/types';
 import { slugify, uploadProductImage } from '@/lib/adminProducts';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export interface ProductFormState {

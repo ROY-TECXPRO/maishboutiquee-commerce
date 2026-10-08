@@ -1,7 +1,5 @@
-﻿import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-  const location = useLocation();
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ShoppingBag, Sparkles, Star, X } from 'lucide-react';
 import { formatPrice } from '@/data/products';
@@ -12,7 +10,7 @@ import type { Size } from '@/types';
 
 /**
  * Customer Service Week flash offer popup.
- * Shows the offer image (Nike Air Force 1 — was KSh 2,500, now KSh 1,500)
+ * Shows the offer image (Nike Air Force 1 - was KSh 2,500, now KSh 1,500)
  * 5 seconds after the visitor arrives. Can be cancelled at any time via
  * the X button, No thanks, Escape, or clicking the backdrop, and will not
  * pop up again in the same session.
@@ -21,6 +19,7 @@ const SIZES = ['39', '40', '41', '42', '43', '44', '45', '46'];
 
 export function CustomerWeekOffer(): React.JSX.Element {
   const navigate = useNavigate();
+  const location = useLocation();
   const { addItem, isInCart } = useCart();
 
   const [open, setOpen] = useState(false);
@@ -30,8 +29,8 @@ export function CustomerWeekOffer(): React.JSX.Element {
 
   // Triggered 5 seconds after arrival; remembered per session.
   useEffect(() => {
-  // Not shown on the checkout/cart pages so the purchase flow is uninterrupted.
-  if (location.pathname === '/checkout' || location.pathname === '/cart') return;
+    // Not shown on the checkout/cart pages so the purchase flow is uninterrupted.
+    if (location.pathname === '/checkout' || location.pathname === '/cart') return;
     if (sessionStorage.getItem('csw-week-popup-dismissed')) return;
     const isCrawler = /googlebot|bingbot|baiduspider|facebookexternalhit|twitterbot|linkedinbot|whatsapp|pinterest|applebot/i.test(
       navigator.userAgent ?? '',
@@ -39,13 +38,13 @@ export function CustomerWeekOffer(): React.JSX.Element {
     if (isCrawler) return;
     const timer = window.setTimeout(() => setOpen(true), 5000);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [location.pathname]);
 
-  useEffect(() => {
-    if (open) sessionStorage.setItem('csw-week-popup-dismissed', 'true');
-  }, [open]);
-
-  const handleClose = (): void => setOpen(false);
+  const handleClose = (): void => {
+    // Remember the dismissal so it does not pop up again this session.
+    sessionStorage.setItem('csw-week-popup-dismissed', 'true');
+    setOpen(false);
+  };
 
   const handleClaim = (): void => {
     if (!selectedSize) {
@@ -53,6 +52,7 @@ export function CustomerWeekOffer(): React.JSX.Element {
       return;
     }
     setError(null);
+    sessionStorage.setItem('csw-week-popup-dismissed', 'true');
     if (isInCart(customerServiceOffer.id, selectedSize as Size, 'Black')) {
       navigate('/checkout');
       return;
@@ -183,7 +183,7 @@ export function CustomerWeekOffer(): React.JSX.Element {
               </div>
 
               <p className='mt-3 text-center text-xs text-muted-foreground'>
-                Limited stock — 50 pairs left. Offer ends soon!
+                Limited stock - 50 pairs left. Offer ends soon!
               </p>
             </motion.div>
           </motion.div>
