@@ -44,8 +44,21 @@ export interface Order {
     total: number;
   };
   createdAt: Date;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status:
+    | 'pending'
+    | 'received'
+    | 'confirmed'
+    | 'ready_for_pickup'
+    | 'collected'
+    | 'processing'
+    | 'shipped'
+    | 'delivered'
+    | 'cancelled';
   userId?: string;
+  /** Staff-entered estimated pickup date (YYYY-MM-DD) from the database. */
+  pickupDate?: string | null;
+  /** Staff-written customer-facing status message from the database. */
+  statusMessage?: string | null;
 }
 
 interface OrderContextType {
@@ -106,6 +119,9 @@ const transformSupabaseOrder = (supabaseOrder: SupabaseOrder & { items?: Supabas
   },
   createdAt: new Date(supabaseOrder.created_at || Date.now()),
   status: supabaseOrder.status as Order['status'],
+  // Order-management fields written by staff (see AdminOrdersSection).
+  pickupDate: supabaseOrder.pickup_date ?? null,
+  statusMessage: supabaseOrder.status_message ?? null,
 });
 
 // Transform local order to Supabase format

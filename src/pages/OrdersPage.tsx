@@ -15,11 +15,19 @@ import {
   ChevronUp,
   Eye,
   MessageSquare,
-  AlertCircle
+  AlertCircle,
+  CalendarDays
 } from 'lucide-react';
 import { useOrders, Order, OrderItem } from '@/context/OrderContext';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { formatPrice } from '@/data/products';
+import {
+  statusLabel,
+  statusBadgeClass,
+  customerStatusMessage,
+  formatPickupDate,
+} from '@/lib/orderStatus';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -27,6 +35,10 @@ import { toast } from 'sonner';
 const ORDER_STATUSES = [
   { id: 'all', name: 'All Orders' },
   { id: 'pending', name: 'Pending' },
+  { id: 'received', name: 'Received' },
+  { id: 'confirmed', name: 'Confirmed' },
+  { id: 'ready_for_pickup', name: 'Ready for pickup' },
+  { id: 'collected', name: 'Collected' },
   { id: 'processing', name: 'Processing' },
   { id: 'shipped', name: 'Shipped' },
   { id: 'delivered', name: 'Delivered' },
@@ -41,6 +53,10 @@ const PAYMENT_STATUS_COLORS: Record<string, string> = {
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   pending: <Clock className="w-4 h-4" />,
+  received: <Package className="w-4 h-4" />,
+  confirmed: <CheckCircle2 className="w-4 h-4" />,
+  ready_for_pickup: <Package className="w-4 h-4" />,
+  collected: <CheckCircle2 className="w-4 h-4" />,
   processing: <Package className="w-4 h-4" />,
   shipped: <Truck className="w-4 h-4" />,
   delivered: <CheckCircle2 className="w-4 h-4" />,
@@ -66,6 +82,28 @@ const OrdersPage: React.FC = () => {
       fetchUserOrders(user.id);
       setIsAdminView(false);
     }
+  }, [user, isStaff]);
+
+  // Live updates for the customer's own orders: when staff change a status,
+  // pickup date or message, the row changes and Postgres Changes (which
+  // respects RLS) emits an event filtered to this user_id. We simply refetch
+  // the saved records, so the page always reflects the database — never
+  // temporary frontend state. The refetch is also the fallback for a refresh.
+  useEffect(() => {
+    if (isStaff || !user) return;
+    let cancelled = false;
+    const channel = supabase
+      .channel(`orders-track-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` },
+        () => { if (!cancelled) void fetchUserOrders(user.id); }
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void channel.unsubscribe();
+    };
   }, [user, isStaff]);
 
   const filteredOrders = orders.filter((order) => {
@@ -351,6 +389,20 @@ Ready to process!`;
                                     </Button>
                                   )}
                               </div>
+                            )}
+                          </div>
+
+                          {/* Customer-facing status banner — reads the SAVED record,
+                              so it survives refresh / sign-out / sign-in. */}
+                          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                            <p className="text-sm font-medium">
+                              {customerStatusMessage(order.status, order.statusMessage)}
+                            </p>
+                            {order.pickupDate && (
+                              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                                <CalendarDays className="h-4 w-4" />
+                                Estimated pickup: {formatPickupDate(order.pickupDate)}
+                              </p>
                             )}
                           </div>
 

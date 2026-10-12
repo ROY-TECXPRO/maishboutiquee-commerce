@@ -26,6 +26,7 @@ import {
 import { useInvalidateCatalog } from '@/lib/catalog';
 import { logAdminActivity, canViewActivityLog } from '@/lib/adminActivity';
 import { AdminActivityLog } from '@/components/admin/AdminActivityLog';
+import { AdminOrdersSection } from '@/components/admin/AdminOrdersSection';
 import type { ProductRecord } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -41,7 +42,7 @@ import {
 } from '@/components/ui/table';
 import {
   Loader2, Save, LogOut, Search, Plus, Pencil, Trash2, RefreshCw, PackageX, ImageOff,
-  LayoutGrid, ListTree, Check, Home, ScrollText, History, Percent,
+  LayoutGrid, ListTree, Check, Home, ScrollText, History, Percent, Package,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
@@ -69,8 +70,9 @@ export default function AdminProductsPage() {
   const [termsOpen, setTermsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  /** 'categories' shows every category on the website; 'products' shows items. */
-  const [section, setSection] = useState<'categories' | 'products' | 'activity'>('categories');
+  /** 'categories' shows every category; 'products' shows items; 'orders'
+   *  is the customer order-management section. */
+  const [section, setSection] = useState<'categories' | 'products' | 'orders' | 'activity'>('categories');
   const [edits, setEdits] = useState<Record<string, EditableRowState>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
 
@@ -464,7 +466,9 @@ export default function AdminProductsPage() {
               ? 'Category Management'
               : section === 'activity'
                 ? 'Admin Activity'
-                : 'Product Management'}
+                : section === 'orders'
+                  ? 'Orders Management'
+                  : 'Product Management'}
           </h1>
           <div className="flex flex-wrap items-center gap-2">
             <RoleBadge verbose />
@@ -532,6 +536,18 @@ export default function AdminProductsPage() {
             {productsQuery.data?.length ?? 0}
           </span>
         </button>
+        <button
+          type="button"
+          onClick={() => setSection('orders')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            section === 'orders'
+              ? 'border-primary text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Package className="h-4 w-4" />
+          Orders
+        </button>
         {/* Only the main admin may read the log, so the tab is hidden entirely
             for anyone else rather than leading to a "not permitted" panel. */}
         {canViewActivityLog(user?.email) && (
@@ -552,6 +568,9 @@ export default function AdminProductsPage() {
 
       {/* ---- Audit trail of admin actions ---- */}
       {section === 'activity' && <AdminActivityLog />}
+
+      {/* ---- Customer order management ---- */}
+      {section === 'orders' && <AdminOrdersSection />}
 
       {/* ---- All website categories; click one to see its items ---- */}
       {section === 'categories' && (

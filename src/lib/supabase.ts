@@ -119,6 +119,10 @@ export interface Order {
   discount: number;
   total: number;
   status: string;
+  /** Staff-entered estimated pickup date (YYYY-MM-DD), nullable. */
+  pickup_date?: string | null;
+  /** Staff-written customer-facing status message, nullable. */
+  status_message?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -339,6 +343,43 @@ export const updateOrderStatus = async (orderId: number, status: string) => {
   } catch (error) {
     console.error('Update order status error:', error);
     throw error;
+  }
+};
+
+/** Fields the admin Orders Management section may write on an order. */
+export interface OrderManagementUpdate {
+  status?: string;
+  pickup_date?: string | null;
+  status_message?: string | null;
+}
+
+/**
+ * Staff update for the Orders Management section (status workflow,
+ * pickup date, customer-facing message).
+ *
+ * Security is enforced server-side, not here: the orders UPDATE RLS
+ * policy only matches rows owned by the caller or any staff row, and
+ * protect_order_state() rejects customers who try to move status or
+ * touch pickup_date/status_message. Because RLS filters the update
+ * itself, a caller with no rights affects zero rows — surfaced below as
+ * an explicit error instead of a silent success.
+ */
+export const updateOrderManagement = async (
+  orderId: number,
+  patch: OrderManagementUpdate
+): Promise<void> => {
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', orderId)
+    .select('id');
+
+  if (error) {
+    console.error('Update order error:', error);
+    throw new Error(`Database error: ${error.message}`);
+  }
+  if (!data || data.length === 0) {
+    throw new Error('Not authorised to update this order, or it no longer exists.');
   }
 };
 
