@@ -215,7 +215,9 @@ export function useCatalog() {
   const query = useQuery({
     queryKey: CATALOG_QUERY_KEY,
     queryFn: fetchCatalog,
-    staleTime: 30_000,
+    staleTime: 5 * 60 * 1000, // 5 minutes - reduce refetching on navigation
+    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
+    initialData: { products: staticProducts, categories: staticCategories, source: 'static' as const },
   });
 
   return {

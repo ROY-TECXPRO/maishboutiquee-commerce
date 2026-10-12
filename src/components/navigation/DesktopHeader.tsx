@@ -89,12 +89,16 @@ export const DesktopHeader: React.FC = () => {
                 src="/maish-logo-dark-mode.webp"
                 alt=""
                 className={`h-10 w-auto md:h-12 object-contain ${isDark ? 'block' : 'hidden'} dark:block`}
+                width="120"
+                height="40"
               />
               {/* Light mode logo - shows when isDark is false */}
               <img 
                 src="/Maish-logo-light-mode.webp"
                 alt=""
                 className={`h-10 w-auto md:h-12 object-contain ${isDark ? 'hidden' : 'block'} dark:hidden`}
+                width="120"
+                height="40"
               />
               <div className="hidden sm:block">
                 {/* Not an <h1>: the site logo must not compete with each page's
@@ -155,6 +159,8 @@ export const DesktopHeader: React.FC = () => {
                               src={cat.image}
                               alt={cat.name}
                               className="w-12 h-12 rounded-lg object-cover"
+                              width={48}
+                              height={48}
                             />
                             <div>
                               <p className="font-medium text-sm">{cat.shortName}</p>
@@ -344,6 +350,8 @@ export const DesktopHeader: React.FC = () => {
                       src={cat.image}
                       alt={cat.name}
                       className="w-12 h-12 rounded-lg object-cover"
+                      width={48}
+                      height={48}
                     />
                     <div>
                       <p className="font-medium">{cat.name}</p>

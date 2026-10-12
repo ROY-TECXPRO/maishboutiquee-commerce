@@ -362,6 +362,8 @@ const HomePage = () => {
             className="absolute inset-0 h-full w-full object-cover"
             loading="eager"
             fetchPriority="high"
+            width="1920"
+            height="1080"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/85 via-emerald-950/25 to-transparent" />
           <div className="absolute bottom-8 left-8 right-8 rounded-3xl border border-white/[0.15] bg-white/10 p-5 text-white backdrop-blur-xl">
@@ -379,7 +381,7 @@ const HomePage = () => {
 
     return (
       <div className="relative hidden h-full min-h-[32rem] overflow-hidden rounded-[2rem] border border-white/20 md:block">
-        <img src={slide.image} alt={slide.imageAlt} className="h-full w-full object-cover" />
+        <img src={slide.image} alt={slide.imageAlt} className="h-full w-full object-cover" width="1920" height="1080" />
         <div className="absolute inset-0 bg-gradient-to-l from-background/10 via-background/[0.35] to-background/80 dark:via-background/[0.55] dark:to-background" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_22%,rgba(245,158,11,0.35),transparent_30%),radial-gradient(circle_at_50%_80%,rgba(17,24,39,0.22),transparent_35%)]" />
         <motion.div
@@ -411,7 +413,7 @@ const HomePage = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,hsl(var(--accent)/0.16),transparent_30%),radial-gradient(circle_at_85%_20%,hsl(var(--primary)/0.14),transparent_32%)] dark:bg-[radial-gradient(circle_at_15%_10%,hsl(var(--accent)/0.1),transparent_30%),radial-gradient(circle_at_85%_20%,hsl(var(--primary)/0.12),transparent_32%)]" />
         <div className="relative min-h-[calc(100svh-5rem)]">
           <div className="absolute inset-0">
-            <img src={slide.image} alt="" className="h-full w-full object-cover opacity-35 dark:opacity-20" loading="eager" fetchPriority="high" decoding="async" />
+            <img src={slide.image} alt="" className="h-full w-full object-cover opacity-35 dark:opacity-20" loading="eager" fetchPriority="high" decoding="async" width="1920" height="1080" />
             <div className={`absolute inset-0 bg-gradient-to-br ${slide.accent} opacity-75 mix-blend-multiply dark:opacity-45`} />
             <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-background/[0.35] dark:from-background dark:via-background/80 dark:to-background/40" />
           </div>
@@ -590,7 +592,7 @@ const HomePage = () => {
                 className="group overflow-hidden rounded-3xl border border-border bg-card/90 shadow-card backdrop-blur-xl transition-shadow duration-300 hover:shadow-card-hover dark:border-white/10 dark:bg-card/70"
               >
                 <div className="relative aspect-[4/3] overflow-hidden">
-                  <img src={card.image} alt={card.alt} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <img src={card.image} alt={card.alt} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" width="800" height="600" />
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent dark:from-background dark:via-background/5" />
                   <span className="absolute left-4 top-4 rounded-full bg-background/75 px-3 py-1.5 text-xs font-bold text-foreground shadow-lg backdrop-blur-xl dark:bg-black/40 dark:text-white">
                     {card.badge}

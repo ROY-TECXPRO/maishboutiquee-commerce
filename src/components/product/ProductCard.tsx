@@ -20,7 +20,9 @@ const LazyImage: React.FC<{
   src: string;
   alt: string;
   className: string;
-}> = ({ src, alt, className }) => {
+  width?: number;
+  height?: number;
+}> = ({ src, alt, className, width = 300, height = 400 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
 
@@ -50,6 +52,8 @@ const LazyImage: React.FC<{
           isLoaded ? 'opacity-100' : 'opacity-0'
         )}
         loading="lazy"
+        width={width}
+        height={height}
         onLoad={() => setIsLoaded(true)}
         onError={() => setHasError(true)}
       />
@@ -95,6 +99,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
           src={primaryImage.src}
           alt={primaryImage.alt}
           className="w-full h-full object-contain"
+          width={300}
+          height={400}
         />
 
         {/* Badges */}

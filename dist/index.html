@@ -56,8 +56,18 @@
          why the install prompt never fired. The old /manifest.json file has
          been deleted for the same reason. -->
     
-    <!-- Preconnect for performance -->
+    <!-- Font Preloads - Optimize font loading for FCP/LCP -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" /></noscript>
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    
+    <!-- Hero Image Preload - Critical for LCP -->
+    <link rel="preload" as="image" href="/images/HERO-IMAGE.webp" fetchpriority="high" />
     
     <!-- Google Analytics -->
     <script defer src="https://www.googletagmanager.com/gtag/js?id=G-LZGZ2XTVCH"></script>
@@ -67,12 +77,14 @@
       gtag('js', new Date());
       gtag('config', 'G-LZGZ2XTVCH');
     </script>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://images.unsplash.com" />
-    <script type="module" crossorigin src="/assets/index-7OFqMjcd.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/ui-Bkw_CsU6.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-BlQYPLL-.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-CvJCidGr.css">
+    <script type="module" crossorigin src="/assets/index-BUVtbnT6.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/supabase-D-pooTq8.js">
+    <link rel="modulepreload" crossorigin href="/assets/radix-B-CIYeWb.js">
+    <link rel="modulepreload" crossorigin href="/assets/utils-B2rm_Apj.js">
+    <link rel="modulepreload" crossorigin href="/assets/ui-BhcKRSwQ.js">
+    <link rel="modulepreload" crossorigin href="/assets/query-D-kECwR1.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-BK8eOjTY.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-CGrPk2IX.css">
   <link rel="manifest" href="/manifest.webmanifest"></head>
   <body>
     <div id="root"></div>

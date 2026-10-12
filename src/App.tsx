@@ -1,8 +1,10 @@
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Suspense } from "react";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { OrderProvider } from "@/context/OrderContext";
@@ -12,32 +14,34 @@ import { PageLoader } from "@/components/ui/PageLoader";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { RedirectToHomeOnLoad } from "@/components/ui/RedirectToHomeOnLoad";
 import { RouteSeo } from "@/components/seo/RouteSeo";
-import HomePage from "./pages/HomePage";
-import CategoryPage from "./pages/CategoryPage";
-import CategoriesPage from "./pages/CategoriesPage";
-import ProductDetailPage from "./pages/ProductDetailPage";
-import SearchPage from "./pages/SearchPage";
-import CartPage from "./pages/CartPage";
-import AccountPage from "./pages/AccountPage";
-import SalePage from "./pages/SalePage";
-import NewArrivalsPage from "./pages/NewArrivalsPage";
-import WishlistPage from "./pages/WishlistPage";
-import NotFound from "./pages/NotFound";
-import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
-import TermsOfServicePage from "./pages/TermsOfServicePage";
-import AboutPage from "./pages/AboutPage";
-import ShippingInfoPage from "./pages/ShippingInfoPage";
-import FAQPage from "./pages/FAQPage";
-import CheckoutPage from "./pages/CheckoutPage";
-import OrdersPage from "./pages/OrdersPage";
-import LocationPage from "./pages/LocationPage";
-import SavedAddressesPage from "./pages/SavedAddressesPage";
-import PaymentMethodsPage from "./pages/PaymentMethodsPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import HelpSupportPage from "./pages/HelpSupportPage";
-import AdminLoginPage from "./pages/admin/AdminLoginPage";
-import AdminProductsPage from "./pages/admin/AdminProductsPage";
 import { AdminRoute } from "@/components/admin/AdminRoute";
+
+// Lazy-loaded page components - code splitting for better initial load performance
+const HomePage = React.lazy(() => import("./pages/HomePage"));
+const CategoryPage = React.lazy(() => import("./pages/CategoryPage"));
+const CategoriesPage = React.lazy(() => import("./pages/CategoriesPage"));
+const ProductDetailPage = React.lazy(() => import("./pages/ProductDetailPage"));
+const SearchPage = React.lazy(() => import("./pages/SearchPage"));
+const CartPage = React.lazy(() => import("./pages/CartPage"));
+const AccountPage = React.lazy(() => import("./pages/AccountPage"));
+const SalePage = React.lazy(() => import("./pages/SalePage"));
+const NewArrivalsPage = React.lazy(() => import("./pages/NewArrivalsPage"));
+const WishlistPage = React.lazy(() => import("./pages/WishlistPage"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
+const PrivacyPolicyPage = React.lazy(() => import("./pages/PrivacyPolicyPage"));
+const TermsOfServicePage = React.lazy(() => import("./pages/TermsOfServicePage"));
+const AboutPage = React.lazy(() => import("./pages/AboutPage"));
+const ShippingInfoPage = React.lazy(() => import("./pages/ShippingInfoPage"));
+const FAQPage = React.lazy(() => import("./pages/FAQPage"));
+const CheckoutPage = React.lazy(() => import("./pages/CheckoutPage"));
+const OrdersPage = React.lazy(() => import("./pages/OrdersPage"));
+const LocationPage = React.lazy(() => import("./pages/LocationPage"));
+const SavedAddressesPage = React.lazy(() => import("./pages/SavedAddressesPage"));
+const PaymentMethodsPage = React.lazy(() => import("./pages/PaymentMethodsPage"));
+const NotificationsPage = React.lazy(() => import("./pages/NotificationsPage"));
+const HelpSupportPage = React.lazy(() => import("./pages/HelpSupportPage"));
+const AdminLoginPage = React.lazy(() => import("./pages/admin/AdminLoginPage"));
+const AdminProductsPage = React.lazy(() => import("./pages/admin/AdminProductsPage"));
 
 const queryClient = new QueryClient();
 
@@ -55,7 +59,8 @@ const App = () => (
                 <RedirectToHomeOnLoad />
                 <PageLoader />
                 <RouteSeo />
-                <Routes>
+                <Suspense fallback={null}>
+                  <Routes>
                   {/* Admin routes render outside the storefront Layout (no nav/footer/promo banner) */}
                   <Route path="/admin/login" element={<AdminLoginPage />} />
                   <Route
@@ -93,6 +98,7 @@ const App = () => (
                     <Route path="*" element={<NotFound />} />
                   </Route>
                 </Routes>
+                </Suspense>
               </BrowserRouter>
             </OrderProvider>
           </WishlistProvider>

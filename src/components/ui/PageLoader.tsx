@@ -7,8 +7,8 @@ interface PageLoaderProps {
 }
 
 export function PageLoader({ 
-  minDuration = 800, 
-  maxDuration = 1500 
+  minDuration = 0, 
+  maxDuration = 0 
 }: PageLoaderProps) {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
@@ -19,17 +19,15 @@ export function PageLoader({
     setIsLoading(true);
     setIsVisible(true);
 
-    // Random duration between min and max
-    const randomDuration = Math.floor(Math.random() * (maxDuration - minDuration + 1)) + minDuration;
-
+    // Minimal delay - just enough for a single frame
     const loadTimer = setTimeout(() => {
       setIsLoading(false);
       
       // Wait for fade out animation to complete before hiding
       setTimeout(() => {
         setIsVisible(false);
-      }, 300);
-    }, randomDuration);
+      }, 100);
+    }, 0);
 
     return () => clearTimeout(loadTimer);
   }, [location.pathname, minDuration, maxDuration]);

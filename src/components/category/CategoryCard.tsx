@@ -29,6 +29,8 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ category, variant = 
           alt=""
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           loading="lazy"
+          width={300}
+          height={400}
         />
         
         {/* Gradient Overlay */}
