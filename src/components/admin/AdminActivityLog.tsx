@@ -14,6 +14,8 @@ const ACTION_LABELS: Record<string, string> = {
   'product.activate': 'Made product visible',
   'product.deactivate': 'Hid product',
   'product.out_of_stock': 'Marked out of stock',
+  'product.offer_on': 'Put on offer (homepage)',
+  'product.offer_off': 'Ended offer',
   'category.create': 'Added category',
   'category.update': 'Edited category',
   'category.delete': 'Deleted category',
@@ -40,6 +42,9 @@ function formatDetails(details: Record<string, unknown> | null): string | null {
   if (typeof details.sku === 'string') parts.push(`SKU ${details.sku}`);
   if (typeof details.is_active === 'boolean') {
     parts.push(details.is_active ? 'now visible' : 'now hidden');
+  }
+  if (typeof details.is_offer === 'boolean') {
+    parts.push(details.is_offer ? 'on offer (homepage)' : 'offer ended');
   }
 
   return parts.length ? parts.join(' · ') : null;

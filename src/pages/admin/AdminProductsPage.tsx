@@ -6,6 +6,7 @@ import {
   fetchCategories,
   updateProductPriceStock,
   setProductActive,
+  setProductOffer,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -40,7 +41,7 @@ import {
 } from '@/components/ui/table';
 import {
   Loader2, Save, LogOut, Search, Plus, Pencil, Trash2, RefreshCw, PackageX, ImageOff,
-  LayoutGrid, ListTree, Check, Home, ScrollText, History,
+  LayoutGrid, ListTree, Check, Home, ScrollText, History, Percent,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
@@ -143,6 +144,40 @@ export default function AdminProductsPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  /**
+   * The Offer button: pins the product in the priority Offers row on the
+   * homepage (directly under the Campaign Collections boxes) and drops it
+   * back to its usual places the moment it is switched off. The catalogue
+   * cache is invalidated in the same tick, so the storefront reflects the
+   * change without a full page reload.
+   */
+  const offerToggleMutation = useMutation({
+    mutationFn: ({ id, isOffer }: { id: string; isOffer: boolean }) =>
+      setProductOffer(id, isOffer),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      invalidateCatalog();
+      const product = (productsQuery.data ?? []).find((p) => p.id === variables.id);
+      void logAdminActivity({
+        action: variables.isOffer ? 'product.offer_on' : 'product.offer_off',
+        entityType: 'product',
+        entityId: variables.id,
+        entityLabel: product?.name,
+        details: {
+          name: product?.name,
+          sku: product?.sku,
+          is_offer: variables.isOffer,
+        },
+      });
+      toast.success(
+        variables.isOffer
+          ? 'On offer — showing in the homepage Offers row'
+          : 'Offer ended — removed from the homepage'
+      );
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   function toFormState(p: ProductRecord): ProductFormState {
     return {
       name: p.name,
@@ -158,6 +193,7 @@ export default function AdminProductsPage() {
       is_active: p.is_active,
       is_new: p.is_new,
       is_sale: p.is_sale,
+      is_offer: p.is_offer,
       sizes: (p.sizes ?? []).join(', '),
       colors: (p.colors ?? []).map((c) => (c.hex ? `${c.name}|${c.hex}` : c.name)).join(', '),
       images: p.images ?? [],
@@ -198,6 +234,7 @@ export default function AdminProductsPage() {
         is_active: form.is_active,
         is_new: form.is_new,
         is_sale: form.is_sale,
+        is_offer: form.is_offer,
         rating: Number(form.rating) || 0,
         images: form.images,
         // Variants are optional; the storefront treats a product with none as
@@ -635,7 +672,7 @@ export default function AdminProductsPage() {
         <div className="rounded-md border">
           {/* min-w forces a horizontal scrollbar on narrow screens so every
               column (and its buttons) can be reached instead of being cut off. */}
-          <Table className="min-w-[900px]">
+          <Table className="min-w-[1040px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Product</TableHead>
@@ -645,6 +682,7 @@ export default function AdminProductsPage() {
                 <TableHead className="w-28">Was (KSh)</TableHead>
                 <TableHead className="w-24">Stock</TableHead>
                 <TableHead className="w-20">Active</TableHead>
+                <TableHead className="w-28">Offer</TableHead>
                 <TableHead className="w-24 text-right">Save</TableHead>
                 <TableHead className="w-28 text-right">Actions</TableHead>
               </TableRow>
@@ -719,6 +757,37 @@ export default function AdminProductsPage() {
                         }
                       />
                     </TableCell>
+                    {/* The Offer button — every product row has one, whether it
+                        already exists or was just added. */}
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant={p.is_offer ? 'default' : 'outline'}
+                        className={
+                          p.is_offer
+                            ? 'bg-amber-500 text-white hover:bg-amber-600'
+                            : undefined
+                        }
+                        disabled={offerToggleMutation.isPending}
+                        onClick={() =>
+                          offerToggleMutation.mutate({ id: p.id, isOffer: !p.is_offer })
+                        }
+                        title={
+                          p.is_offer
+                            ? 'End offer — remove from the homepage Offers row'
+                            : 'Put on offer — show first on the homepage'
+                        }
+                        aria-label={
+                          p.is_offer
+                            ? `End offer for ${p.name}`
+                            : `Put ${p.name} on offer`
+                        }
+                        aria-pressed={p.is_offer}
+                      >
+                        <Percent className="mr-1 h-3.5 w-3.5" />
+                        {p.is_offer ? 'On Offer' : 'Offer'}
+                      </Button>
+                    </TableCell>
                     <TableCell className="text-right">
                       <Button
                         size="sm"
@@ -768,7 +837,7 @@ export default function AdminProductsPage() {
               })}
               {filteredProducts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     No products yet. Use <strong>Add Product</strong> to create your first one.
                   </TableCell>
                 </TableRow>

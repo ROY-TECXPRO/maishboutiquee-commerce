@@ -49,6 +49,7 @@ interface DbProductRow {
   review_count?: number | null;
   is_new?: boolean | null;
   is_sale?: boolean | null;
+  is_offer?: boolean | null;
   stock?: number | null;
   size_prices?: Record<string, number> | null;
   images?: Array<{ src: string; alt: string }> | null;
@@ -118,6 +119,7 @@ function mapProduct(row: DbProductRow, categoryName: string | undefined): Produc
     reviewCount: row.review_count ?? 0,
     isNew: !!row.is_new,
     isSale: !!row.is_sale,
+    isOffer: !!row.is_offer,
     stock: row.stock ?? 0,
     sku: row.sku,
     sizePrices: row.size_prices ?? undefined,
@@ -189,15 +191,46 @@ export function selectSaleProducts(all: Product[], limit = 12): Product[] {
   return [...pool].slice(0, limit);
 }
 
+/**
+ * Products the admin has flagged with the Offer button.
+ *
+ * Deliberately has NO fallback pool (unlike the sale/new-arrival selectors):
+ * when nothing is flagged the homepage offers row must disappear entirely,
+ * not degrade into "show everything".
+ */
+export function selectOfferProducts(all: Product[], limit = 12): Product[] {
+  return all.filter((p) => p.isOffer === true).slice(0, limit);
+}
+
+/**
+ * Live-catalogue search. Mirrors the static `searchProducts` helper so a
+ * product added through the admin dashboard (which only exists in the
+ * database) is found by the same queries as the seeded bundle: every term
+ * must match somewhere in name, SKU, tags, description, category, colours,
+ * sizes, use cases or gender.
+ */
 export function searchCatalog(all: Product[], query: string): Product[] {
-  const term = query.trim().toLowerCase();
-  if (!term) return [];
-  return all.filter(
-    (p) =>
-      p.name.toLowerCase().includes(term) ||
-      p.sku.toLowerCase().includes(term) ||
-      p.tags.some((t) => t.toLowerCase().includes(term))
-  );
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) return [];
+
+  return all.filter((product) => {
+    const searchableText = [
+      product.name,
+      product.sku,
+      product.category,
+      product.subCategory ?? '',
+      product.description ?? '',
+      product.gender ?? '',
+      ...product.tags,
+      ...product.colors.map((c) => c.name),
+      ...product.sizes,
+      ...(product.useCase ?? []),
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    return terms.every((term) => searchableText.includes(term));
+  });
 }
 
 /** Resolves both legacy static ids and database uuids. */

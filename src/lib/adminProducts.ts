@@ -54,6 +54,26 @@ export async function setProductActive(id: string, isActive: boolean): Promise<v
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Turns the homepage Offer row flag on or off for one product.
+ *
+ * ON  -> the product is pinned in the priority Offers row on the homepage
+ *        (directly under the Campaign Collections boxes).
+ * OFF -> it drops out of that row and stays wherever it was before
+ *        (category pages, search, …).
+ *
+ * Requires the `is_offer` column from
+ * supabase/migrations/20261012000000_product_offers.sql.
+ */
+export async function setProductOffer(id: string, isOffer: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('products')
+    .update({ is_offer: isOffer, updated_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
+}
+
 /* ============================================================
  * Full admin CRUD (add / edit / delete)
  * RLS still enforces that only profiles.role IN ('admin','staff')
@@ -72,6 +92,8 @@ export interface ProductInput {
   stock?: number;
   is_new?: boolean;
   is_sale?: boolean;
+  /** Pins the product in the homepage priority Offers row while true. */
+  is_offer?: boolean;
   is_active?: boolean;
   sizes?: string[];
   /** JSONB array of { name, hex, available }. */

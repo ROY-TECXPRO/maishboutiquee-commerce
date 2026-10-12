@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   ArrowLeft, 
   Check, 
   CreditCard, 
@@ -18,7 +18,9 @@ import {
   Loader2,
   AlertCircle,
   LogIn,
-  MessageCircle
+  MessageCircle,
+  Copy,
+  Info,
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrderContext';
@@ -29,14 +31,30 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { supabase } from '@/lib/supabase';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 // Delivery zones with pricing
-const DELIVERY_ZONES = [
+export const DELIVERY_ZONES = [
   { id: 'narok-town', name: 'Narok Town', price: 0, description: 'Free delivery within town' },
   { id: 'narok-county', name: 'Narok County', price: 200, description: 'Delivery to other areas in Narok County' },
-  { id: 'nairobi', name: 'Nairobi', price: 350, description: 'Doorstep delivery in Nairobi' },
-  { id: 'other', name: 'Other Counties', price: 500, description: 'Delivery to other counties in Kenya' },
+  { id: 'nairobi', name: 'Nairobi', price: 300, description: 'Doorstep delivery in Nairobi' },
+  { id: 'other', name: 'Other Counties', price: 300, description: 'Delivery to other counties in Kenya' },
 ];
+
+/**
+ * M-Pesa payment details shown in the confirmation popup the moment an
+ * M-Pesa order is placed. Exported so tests can pin them.
+ */
+export const MPESA_TILL_NUMBER = '5044921';
+export const MPESA_TILL_NAME = 'Maish Bazaar Ltd';
+/** Where clients send their payment confirmation — 0799 921 036. */
+export const PAYMENT_PROOF_PHONE = '0799921036';
 
 // Payment methods
 const PAYMENT_METHODS = [
@@ -99,6 +117,17 @@ const CheckoutPage: React.FC = () => {
   const [orderNumber, setOrderNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  /** Opens the M-Pesa instructions popup once an M-Pesa order is confirmed. */
+  const [mpesaDialogOpen, setMpesaDialogOpen] = useState(false);
+  /** Which popup field was just copied, so the button can show "Copied". */
+  const [copiedField, setCopiedField] = useState<'till' | 'name' | null>(null);
+  /**
+   * The total captured at order time. The cart is cleared on confirmation,
+   * which zeroes `subtotal` (and therefore `finalTotal`), so the popup must
+   * remember what the client actually owes.
+   */
+  const [orderTotal, setOrderTotal] = useState<number | null>(null);
   
   // Account creation - Required for checkout
   const [createAccount, setCreateAccount] = useState(true);
@@ -153,6 +182,29 @@ const CheckoutPage: React.FC = () => {
       setCurrentStep('payment');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  /** Copies a payment detail to the clipboard with a visible "Copied" state. */
+  const copyToClipboard = async (text: string, field: 'till' | 'name') => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Fallback where the async clipboard API is unavailable (http or older browsers).
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    setCopiedField(field);
+    toast.success(field === 'till' ? 'Till number copied' : 'Account name copied');
+    window.setTimeout(
+      () => setCopiedField((prev) => (prev === field ? null : prev)),
+      2000
+    );
   };
 
   const handlePlaceOrder = async () => {
@@ -259,11 +311,17 @@ const CheckoutPage: React.FC = () => {
       });
       
       setOrderNumber(orderNum);
+      // Capture the payable total BEFORE the cart is cleared — clearCart()
+      // zeroes subtotal, so `finalTotal` would otherwise read as delivery-only
+      // on the confirmation screen and in the M-Pesa popup.
+      setOrderTotal(finalTotal);
       setOrderPlaced(true);
       clearCart();
       setCurrentStep('confirmation');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       toast.success('Order placed successfully!');
+      // An M-Pesa order pops up the till-number instructions right away.
+      if (selectedPayment.id === 'mpesa') setMpesaDialogOpen(true);
       
     } catch (error) {
       console.error('Error placing order:', error);
@@ -332,6 +390,13 @@ const CheckoutPage: React.FC = () => {
     toast.success('WhatsApp opened! Send your order details.');
   };
 
+  /** What the client owes — frozen at order time (see `orderTotal`). */
+  const amountDue = orderTotal ?? finalTotal;
+  /** Pre-filled proof-of-payment messages for WhatsApp / SMS. */
+  const proofMessage = `Maish Boutique payment proof - Order ${orderNumber}, Amount ${formatPrice(amountDue)}, Till ${MPESA_TILL_NUMBER}.`;
+  const proofWhatsappUrl = `https://wa.me/254${PAYMENT_PROOF_PHONE.slice(1)}?text=${encodeURIComponent(proofMessage)}`;
+  const proofSmsUrl = `sms:${PAYMENT_PROOF_PHONE}?body=${encodeURIComponent(proofMessage)}`;
+
   if (items.length === 0 && !orderPlaced) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
@@ -395,10 +460,185 @@ const CheckoutPage: React.FC = () => {
               </div>
               <div className="border-t border-border pt-2 mt-2 flex justify-between font-semibold">
                 <span>Total:</span>
-                <span>{formatPrice(finalTotal)}</span>
+                <span>{formatPrice(amountDue)}</span>
               </div>
             </div>
           </div>
+
+          {/* M-Pesa pending-payment card — reopens the instructions popup. */}
+          {selectedPayment.id === 'mpesa' && (
+            <div className="mb-6 rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-5 text-left">
+              <p className="flex items-center gap-2 font-semibold">
+                <Wallet className="h-4 w-4 text-emerald-600" />
+                Awaiting M-Pesa payment
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Pay till{' '}
+                <span className="font-mono font-semibold text-foreground">{MPESA_TILL_NUMBER}</span>{' '}
+                ({MPESA_TILL_NAME}), then send a copy of your payment confirmation to{' '}
+                <span className="font-semibold text-foreground">{PAYMENT_PROOF_PHONE}</span> on
+                WhatsApp or SMS.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full"
+                onClick={() => setMpesaDialogOpen(true)}
+              >
+                View M-Pesa payment instructions
+              </Button>
+            </div>
+          )}
+
+          {/* M-Pesa instructions popup — opens automatically the moment an
+              M-Pesa order is confirmed. Till number & name are copyable. */}
+          <Dialog open={mpesaDialogOpen} onOpenChange={setMpesaDialogOpen}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-lg">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#4CAF50] text-sm font-bold text-white">
+                    M
+                  </span>
+                  M-Pesa Payment
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                {/* Amount due */}
+                <div className="rounded-xl border border-border bg-muted/40 p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Amount to pay
+                  </p>
+                  <p className="text-2xl font-bold">{formatPrice(amountDue)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Order reference: <span className="font-mono">{orderNumber}</span>
+                  </p>
+                </div>
+
+                {/* Till number + account name, each copyable */}
+                <div className="divide-y divide-border overflow-hidden rounded-xl border-2 border-emerald-500/40 bg-emerald-500/5">
+                  <div className="flex items-center justify-between gap-3 p-4">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Till Number
+                      </p>
+                      <p className="font-mono text-3xl font-bold tracking-[0.18em] text-emerald-700 dark:text-emerald-400">
+                        {MPESA_TILL_NUMBER}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(MPESA_TILL_NUMBER, 'till')}
+                      aria-label="Copy till number"
+                    >
+                      {copiedField === 'till' ? (
+                        <Check className="mr-1 h-4 w-4 text-success" />
+                      ) : (
+                        <Copy className="mr-1 h-4 w-4" />
+                      )}
+                      {copiedField === 'till' ? 'Copied' : 'Copy'}
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 p-4">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Pay To (Account Name)
+                      </p>
+                      <p className="truncate text-lg font-semibold">{MPESA_TILL_NAME}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(MPESA_TILL_NAME, 'name')}
+                      aria-label="Copy account name"
+                    >
+                      {copiedField === 'name' ? (
+                        <Check className="mr-1 h-4 w-4 text-success" />
+                      ) : (
+                        <Copy className="mr-1 h-4 w-4" />
+                      )}
+                      {copiedField === 'name' ? 'Copied' : 'Copy'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Step-by-step */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold">How to pay</p>
+                  <ol className="list-decimal list-inside space-y-1.5 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+                    <li>
+                      Open <span className="font-medium text-foreground">M-Pesa</span> on your
+                      phone.
+                    </li>
+                    <li>
+                      Select <span className="font-medium text-foreground">Lipa na M-Pesa</span>.
+                    </li>
+                    <li>
+                      Choose{' '}
+                      <span className="font-medium text-foreground">Buy Goods &amp; Services</span>.
+                    </li>
+                    <li>
+                      Enter Till Number{' '}
+                      <span className="font-mono font-semibold text-foreground">
+                        {MPESA_TILL_NUMBER}
+                      </span>
+                      .
+                    </li>
+                    <li>
+                      Enter the amount{' '}
+                      <span className="font-semibold text-foreground">
+                        {formatPrice(amountDue)}
+                      </span>
+                      .
+                    </li>
+                    <li>
+                      Confirm the name reads{' '}
+                      <span className="font-semibold text-foreground">{MPESA_TILL_NAME}</span>,
+                      then enter your M-Pesa PIN.
+                    </li>
+                  </ol>
+                </div>
+
+                {/* Proof-of-payment advice */}
+                <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+                  <p className="flex items-center gap-2 text-sm font-semibold">
+                    <Info className="h-4 w-4 text-amber-600" />
+                    Send us proof of payment
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    After paying, send a copy of your M-Pesa confirmation (SMS or screenshot) to{' '}
+                    <span className="font-semibold text-foreground">{PAYMENT_PROOF_PHONE}</span> by
+                    WhatsApp or SMS so we can verify your payment and dispatch your order.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      className="bg-[#25D366] text-white hover:bg-[#1ebe5b]"
+                      asChild
+                    >
+                      <a href={proofWhatsappUrl} target="_blank" rel="noreferrer">
+                        <MessageCircle className="mr-1.5 h-4 w-4" />
+                        Send on WhatsApp
+                      </a>
+                    </Button>
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={proofSmsUrl}>Send by SMS</a>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  className="w-full sm:w-auto"
+                  onClick={() => setMpesaDialogOpen(false)}
+                >
+                  Done — I have paid
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <div className="space-y-3">
             <Button size="lg" className="w-full" asChild>
@@ -839,6 +1079,14 @@ const CheckoutPage: React.FC = () => {
                         </label>
                       ))}
                     </div>
+                    {/* M-Pesa: the till details arrive once the order is confirmed. */}
+                    {selectedPayment.id === 'mpesa' && (
+                      <p className="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-muted-foreground">
+                        <Info className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                        After you confirm the order you'll receive our till number and payment
+                        instructions in a popup — every detail there can be copied in one tap.
+                      </p>
+                    )}
                   </div>
 
                   {/* Order Summary */}

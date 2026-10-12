@@ -6,7 +6,8 @@ import { ProductGrid } from '@/components/product/ProductGrid';
 import { CategoryGrid } from '@/components/category/CategoryCard';
 import { ReviewsSlider } from '@/components/reviews/ReviewCard';
 import { googleReviews } from '@/data/products';
-import { useCatalog, selectNewArrivals, selectSaleProducts } from '@/lib/catalog';
+import { useCatalog, selectNewArrivals, selectSaleProducts, selectOfferProducts } from '@/lib/catalog';
+import { OfferProductCard } from '@/components/product/OfferProductCard';
 import type { Category } from '@/types';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
@@ -170,6 +171,13 @@ const HomePage = () => {
   const { products: liveProducts, categories: liveCategories } = useCatalog();
   const newArrivals = selectNewArrivals(liveProducts, 8);
   const saleProducts = selectSaleProducts(liveProducts, 12);
+  /**
+   * Priority offers: only what the admin has flagged with the Offer button.
+   * Rendered as the first product row on the page, directly under the
+   * Campaign Collections boxes; the row disappears entirely when the admin
+   * turns the last offer off (this selector has no fallback pool).
+   */
+  const offerProducts = selectOfferProducts(liveProducts, 12);
   const popularProducts = liveProducts.slice(0, 8);
   const accessoriesProducts = liveProducts.filter(p => p.category === 'accessories').slice(0, 8);
 
@@ -617,6 +625,34 @@ const HomePage = () => {
           </Link>
         </div>
       </section>
+
+      {/* Priority offers — sits immediately after the Campaign Collections
+          boxes so admin-flagged items are the first products a shopper sees.
+          Hidden completely when no product carries the offer flag. */}
+      {offerProducts.length > 0 && (
+        <section className="pt-6 md:pt-10">
+          <div className="mx-auto max-w-7xl px-4 md:px-0">
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-[0.24em] text-amber-600">
+                  Priority Offers
+                </span>
+                <h2 className="mt-1 font-display text-2xl font-bold md:text-3xl">
+                  Today&rsquo;s Offers 🔥
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Tap any item to go straight to checkout — deals end when the offer is off.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+              {offerProducts.map((product) => (
+                <OfferProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="py-6 md:py-10">
         <div className="container mx-auto px-4 md:px-0">

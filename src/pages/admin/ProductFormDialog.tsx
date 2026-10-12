@@ -24,6 +24,8 @@ export interface ProductFormState {
   is_active: boolean;
   is_new: boolean;
   is_sale: boolean;
+  /** Pins the product in the homepage priority Offers row. */
+  is_offer: boolean;
   /** Star rating 0–5 (with half-star steps) chosen by the admin. */
   rating: string;
   /** Comma-separated; empty means the product has no size variants. */
@@ -46,6 +48,7 @@ export const emptyProductForm: ProductFormState = {
   is_active: true,
   is_new: false,
   is_sale: false,
+  is_offer: false,
   /** Default 5 stars so new products display stars on the storefront
    * (the admin tunes it afterwards to the rating they see on the floor). */
   rating: '5',
@@ -392,7 +395,7 @@ export function ProductFormDialog({
             </div>
           </div>
 
-          <div className="sm:col-span-2 grid sm:grid-cols-3 gap-4 pt-2 border-t border-border">
+          <div className="sm:col-span-2 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2 border-t border-border">
             <div className="flex items-center justify-between gap-3">
               <Label htmlFor="pf-active" className="text-sm">Active</Label>
               <Switch id="pf-active" checked={form.is_active} onCheckedChange={(v) => set('is_active', v)} />
@@ -405,7 +408,17 @@ export function ProductFormDialog({
               <Label htmlFor="pf-sale" className="text-sm">On sale</Label>
               <Switch id="pf-sale" checked={form.is_sale} onCheckedChange={(v) => set('is_sale', v)} />
             </div>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="pf-offer" className="text-sm" title="Show in the priority Offers row on the homepage">
+                On offer
+              </Label>
+              <Switch id="pf-offer" checked={form.is_offer} onCheckedChange={(v) => set('is_offer', v)} />
+            </div>
           </div>
+          <p className="sm:col-span-2 -mt-1 text-xs text-muted-foreground">
+            Tip: “On offer” pins this product in the priority Offers row on the homepage
+            (right under the Campaign Collections boxes) until you switch it off.
+          </p>
         </div>
 
         <DialogFooter>

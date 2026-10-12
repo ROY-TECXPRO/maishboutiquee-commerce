@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search as SearchIcon, X, TrendingUp, Clock, ArrowLeft, SlidersHorizontal } from 'lucide-react';
-import { searchProducts, categories, products } from '@/data/products';
+import { useCatalog, searchCatalog } from '@/lib/catalog';
 import { ProductCard } from '@/components/product/ProductCard';
 import { cn } from '@/lib/utils';
 
@@ -21,12 +21,17 @@ const SearchPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Live catalogue: searches MUST include products the admin added through
+  // the dashboard (they only exist in the database, not the static bundle).
+  // Falls back to the static bundle automatically while the table is empty.
+  const { products: catalogProducts, categories: catalogCategories } = useCatalog();
+
   // Memoized search results - only recalculate when query or category changes
   const results = useMemo(() => {
-    return searchProducts(query).filter(
+    return searchCatalog(catalogProducts, query).filter(
       product => !selectedCategory || product.category === selectedCategory
     );
-  }, [query, selectedCategory]);
+  }, [catalogProducts, query, selectedCategory]);
 
   useEffect(() => {
     // Get initial query from URL params if present
@@ -139,7 +144,7 @@ const SearchPage: React.FC = () => {
                   >
                     All
                   </button>
-                  {categories.map(cat => (
+                  {catalogCategories.map(cat => (
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
@@ -255,7 +260,7 @@ const SearchPage: React.FC = () => {
               <div>
                 <h3 className="font-medium mb-3">Browse Categories</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {categories.slice(0, 6).map(cat => (
+                  {catalogCategories.slice(0, 6).map(cat => (
                     /* Real <a href> so crawlers can follow these category
                        links; a click handler alone is not discoverable. */
                     <Link
@@ -269,7 +274,7 @@ const SearchPage: React.FC = () => {
                       <div>
                         <p className="font-medium text-sm">{cat.shortName}</p>
                         <p className="text-xs text-muted-foreground">
-                          {products.filter(p => p.category === cat.id).length} items
+                          {catalogProducts.filter(p => p.category === cat.id).length} items
                         </p>
                       </div>
                     </Link>

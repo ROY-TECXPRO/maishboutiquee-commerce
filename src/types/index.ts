@@ -48,6 +48,8 @@ export interface ProductRecord {
   review_count: number;
   is_new: boolean;
   is_sale: boolean;
+  /** Admin "Offer" flag — pins the product in the homepage priority Offers row. */
+  is_offer: boolean;
   stock: number;
   size_prices?: Record<string, number>;
   images: Array<{ src: string; alt: string }>;
@@ -82,6 +84,8 @@ export interface Product {
   reviewCount: number;
   isNew?: boolean;
   isSale?: boolean;
+  /** True while the admin has the product flagged as an offer on the homepage. */
+  isOffer?: boolean;
   stock: number;
   sku: string;
   sizePrices?: Record<string, number>; // For products with size-based pricing

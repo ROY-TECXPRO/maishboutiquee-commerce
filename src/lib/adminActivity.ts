@@ -24,6 +24,8 @@ export type AdminAction =
   | 'product.activate'
   | 'product.deactivate'
   | 'product.out_of_stock'
+  | 'product.offer_on'
+  | 'product.offer_off'
   | 'category.create'
   | 'category.update'
   | 'category.delete'
