@@ -147,25 +147,18 @@ export default defineConfig(({ mode }) => ({
             },
           },
 
-          // Supabase API: network-first with an offline fallback. Caching this
-          // CacheFirst would serve a stale product list or, worse, replay a
-          // cached response after an order changes, so the data must be fresh.
-          // Stale entries are only used when the network is unavailable.
-          {
-            urlPattern: /^https:\/\/[a-z0-9-]+\.supabase\.co\/(rest|storage)\//i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "supabase-api",
-              networkTimeoutSeconds: 5,
-              expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24,
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
+          // Supabase REST/Storage API: deliberately NOT runtime-cached.
+          //
+          // This is the fix for "I updated a product as admin but other
+          // browsers never see the change". Caching /rest/ responses in a
+          // per-browser service-worker cache means every device ends up serving
+          // its own up-to-a-day-old copy of the catalogue, so an admin save only
+          // becomes visible in the browser that made it. Products, categories
+          // and orders are now read live from the database on every load; when
+          // the network is unavailable the app falls back to the static bundle
+          // inside fetchCatalog() instead of a stale cached response.
+          // (Product images are still cached by the dedicated "product-images"
+          // rule above, which is NetworkFirst.)
           {
             urlPattern: /^https:\/\/images\.unsplash\.com\/.*/i,
             handler: "CacheFirst",

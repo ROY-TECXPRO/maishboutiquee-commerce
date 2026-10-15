@@ -251,6 +251,16 @@ export function useCatalog() {
     staleTime: 5 * 60 * 1000, // 5 minutes - reduce refetching on navigation
     gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
     initialData: { products: staticProducts, categories: staticCategories, source: 'static' as const },
+    // Treat the seeded static bundle as already stale so that every page load
+    // immediately kicks off a background read of the live `products` table.
+    //
+    // Without this, `initialData` + `staleTime` meant a freshly-opened browser
+    // rendered the static bundle and did NOT query Supabase for up to 5
+    // minutes — so edits saved through the admin dashboard never showed up on
+    // other devices/browsers on reload. With it, the static bundle still paints
+    // instantly (no loading flash) and is replaced by the live catalogue the
+    // moment the database responds, making admin changes visible to everyone.
+    initialDataUpdatedAt: 0,
   });
 
   return {
