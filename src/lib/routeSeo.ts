@@ -33,9 +33,9 @@ export const PUBLIC_ROUTES: Record<string, RouteSeoEntry> = {
       'Shop the latest additions to the Maish Fashion Boutique catalogue, updated as new stock arrives across clothing, uniforms, footwear and home essentials.',
   },
   '/sale': {
-    title: 'Sale & Weekend Offers',
+    title: 'Sale & Special Offers',
     description:
-      'Current sale and weekend flash sale offers at Maish Fashion Boutique, including World Cup jerseys and fan merchandise. Discounts apply Friday to Sunday.',
+      'Current offers and discounted products at Maish Fashion Boutique, updated live. The weekend coupon code is shown on this page from Friday to Sunday.',
   },
   '/about': {
     title: 'About Us',

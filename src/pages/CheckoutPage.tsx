@@ -25,9 +25,10 @@ import {
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrderContext';
 import { useAuth } from '@/context/AuthContext';
-import { formatPrice } from '@/data/products';
+import { formatPrice } from '@/lib/priceHelpers';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { validateSaleCoupon, couponMessage, recheckAppliedCoupon } from '@/lib/siteSale';
 import { toast } from 'sonner';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { supabase } from '@/lib/supabase';
@@ -113,6 +114,8 @@ const CheckoutPage: React.FC = () => {
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState('');
+  const [promoPercent, setPromoPercent] = useState(0);
+  const [promoChecking, setPromoChecking] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -155,7 +158,7 @@ const CheckoutPage: React.FC = () => {
 
   const [errors, setErrors] = useState<Partial<ShippingInfo>>({});
 
-  const discount = promoApplied ? subtotal * 0.15 : 0;
+  const discount = promoApplied ? subtotal * (promoPercent / 100) : 0;
   const finalTotal = subtotal - discount + selectedZone.price;
 
   const validateShipping = () => {
@@ -207,6 +210,21 @@ const CheckoutPage: React.FC = () => {
     );
   };
 
+  // The admin sets the code and percentage (Sale tab); the server checks both,
+  // and that today is Friday, Saturday or Sunday in Nairobi.
+  const handleApplyPromo = async () => {
+    setPromoError('');
+    setPromoChecking(true);
+    const result = await validateSaleCoupon(promoCode.trim());
+    setPromoChecking(false);
+    if (result.valid) {
+      setPromoPercent(result.percent);
+      setPromoApplied(true);
+    } else {
+      setPromoError(couponMessage(result.reason));
+    }
+  };
+
   const handlePlaceOrder = async () => {
     // Validate that user is logged in or will create account
     if (!user && createAccount && !password) {
@@ -217,6 +235,23 @@ const CheckoutPage: React.FC = () => {
     
     setIsSubmitting(true);
     setSubmitError(null);
+
+    // A code applied earlier may have stopped working (the weekend ended, the
+    // admin changed it): confirm it again with the server before charging.
+    if (promoApplied) {
+      const recheck = recheckAppliedCoupon(await validateSaleCoupon(promoCode.trim()), promoPercent);
+      if (recheck.outcome !== 'ok') {
+        setIsSubmitting(false);
+        if (recheck.outcome === 'removed') {
+          setPromoApplied(false);
+          setPromoPercent(0);
+        } else if (recheck.outcome === 'changed') {
+          setPromoPercent(recheck.percent);
+        }
+        setSubmitError(recheck.message);
+        return;
+      }
+    }
 
     try {
       // Generate order number
@@ -373,7 +408,7 @@ const CheckoutPage: React.FC = () => {
     message += `------------------\n`;
     message += `*Subtotal:* ${formatPrice(subtotal)}\n`;
     if (promoApplied) {
-      message += `*Discount (15%):* -${formatPrice(discount)}\n`;
+      message += `*Discount (${promoPercent}%):* -${formatPrice(discount)}\n`;
     }
     message += `*Delivery:* ${selectedZone.price === 0 ? 'FREE' : formatPrice(selectedZone.price)}\n`;
     message += `*TOTAL:* ${formatPrice(finalTotal)}\n\n`;
@@ -1128,33 +1163,20 @@ const CheckoutPage: React.FC = () => {
                             onChange={(e) => setPromoCode(e.target.value)}
                             className="flex-1 h-11 px-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20"
                           />
-                          <Button 
-                            variant="outline" 
-                            onClick={() => {
-                              // Using Kenya timezone (UTC+3)
-                              const now = new Date();
-                              const kenyaTime = new Date(now.getTime() + 3 * 60 * 60 * 1000);
-                              const day = kenyaTime.getDay();
-                              const isWeekend = day === 5 || day === 6 || day === 0;
-                              if (promoCode.toUpperCase() === '332211') {
-                                if (isWeekend) {
-                                  setPromoApplied(true);
-                                  setPromoError('');
-                                } else {
-                                  setPromoError('Code 332211 is only valid on Friday, Saturday, and Sunday');
-                                }
-                              } else {
-                                setPromoError('Invalid promo code');
-                              }
-                            }}
-                          >Apply</Button>
+                          <Button
+                            variant="outline"
+                            onClick={handleApplyPromo}
+                            disabled={promoChecking || !promoCode.trim()}
+                          >
+                            {promoChecking ? 'Checking...' : 'Apply'}
+                          </Button>
                         </div>
                         {promoError && <p className="text-destructive text-sm">{promoError}</p>}
                       </div>
                     ) : (
                       <div className="flex items-center justify-between p-3 bg-success/10 border border-success/20 rounded-lg">
-                        <p className="text-success font-medium">15% off applied!</p>
-                        <Button variant="ghost" size="sm" onClick={() => { setPromoApplied(false); setPromoCode(''); }}>Remove</Button>
+                        <p className="text-success font-medium">{promoPercent}% off applied!</p>
+                        <Button variant="ghost" size="sm" onClick={() => { setPromoApplied(false); setPromoPercent(0); setPromoCode(''); }}>Remove</Button>
                       </div>
                     )}
                   </div>
@@ -1217,7 +1239,7 @@ const CheckoutPage: React.FC = () => {
                 </div>
                 {promoApplied && (
                   <div className="flex justify-between text-sm text-success">
-                    <span>Discount (15%)</span>
+                    <span>Discount ({promoPercent}%)</span>
                     <span>-{formatPrice(discount)}</span>
                   </div>
                 )}

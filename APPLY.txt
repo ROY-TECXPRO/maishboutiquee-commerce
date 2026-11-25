@@ -1,0 +1,21 @@
+MAISH SALE + COUPON + ICON UPDATE - how to apply
+================================================
+1. Copy the folders in this zip (index.html, public, src, supabase) INTO your
+   project root, letting them overwrite files with the same names.
+
+2. DELETE this file (no longer used):
+      src/components/ui/OfferBanner.tsx
+
+3. Run the database migration BEFORE you deploy the site:
+   Supabase Dashboard > SQL Editor > New query > paste the whole contents of
+      supabase/migrations/20261124000000_site_sale.sql
+   > Run.  (Safe to run twice. Needs the earlier migrations, including the
+   popup one, to be applied already.)
+
+4. Build and upload:   npm run build   then upload dist to public_html.
+
+5. Sign in as ADMIN > /admin/products:
+   - "Sale" tab: switch the sale ON, set the title, message, coupon code and
+     percentage, then press "Save and publish".
+   - "Products" tab: switch Offer ON for the products you want on the Sale
+     page. They also appear in the homepage Offers row.

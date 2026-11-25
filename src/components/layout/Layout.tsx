@@ -6,27 +6,22 @@ import { BottomNav } from '@/components/navigation/BottomNav';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { UpdatePrompt } from '@/registerServiceWorker';
 import { Footer } from '@/components/layout/Footer';
-import OfferBanner from '@/components/ui/OfferBanner';
-import { useCart } from '@/context/CartContext';
+import { useLiveCatalog } from '@/lib/catalog';
 import { CustomerWeekOffer } from '@/components/customer-week/CustomerWeekOffer';
+import { FloatingWhatsApp } from '@/components/whatsapp/FloatingWhatsApp';
 
 
 export const Layout: React.FC = () => {
   const location = useLocation();
-  const { itemCount } = useCart();
 
-  // Show promo code only when 2+ items in cart and it's weekend (Kenya timezone)
-  const now = new Date();
-  const kenyaTime = new Date(now.getTime() + 3 * 60 * 60 * 1000);
-  const day = kenyaTime.getDay();
-  const isWeekend = day === 5 || day === 6 || day === 0;
-  const showPromoCode = itemCount >= 2 && isWeekend;
+  // Admin changes to products (the Offer switch, prices, stock...) reach every
+  // open tab at once, so the homepage Offers row and the Sale page stay current.
+  useLiveCatalog();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-<CustomerWeekOffer />
+      <CustomerWeekOffer />
 
-      {showPromoCode && <OfferBanner />}
       <DesktopHeader />
       
       <main className="flex-1 pb-20 md:pb-0">
@@ -47,6 +42,7 @@ export const Layout: React.FC = () => {
       <BottomNav />
       <InstallPrompt />
       <UpdatePrompt />
+      {location.pathname === '/' && <FloatingWhatsApp />}
     </div>
   );
 };

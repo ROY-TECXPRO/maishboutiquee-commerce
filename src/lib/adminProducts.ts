@@ -144,9 +144,10 @@ export async function deleteProduct(id: string): Promise<void> {
  * RLS on storage.objects only permits this for profiles.role IN
  * ('admin','staff'), so a customer's upload is rejected server-side.
  */
-export async function uploadProductImage(file: File): Promise<string> {
+export async function uploadProductImage(file: File, folder = 'products'): Promise<string> {
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const safeFolder = folder.replace(/[^a-z0-9-]/gi, '') || 'products';
+  const path = `${safeFolder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const { error } = await supabase.storage.from('maish-product-images').upload(path, file, {
     // Must NOT be a 1-year immutable cache. Product images are served from a

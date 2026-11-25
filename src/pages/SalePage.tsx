@@ -1,72 +1,83 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ProductGrid } from '@/components/product/ProductGrid';
-import { getSaleProducts, products } from '@/data/products';
-import { PromoBanner } from '@/components/promo/PromoBanner';
+import { Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { OfferProductCard } from '@/components/product/OfferProductCard';
+import { useCatalog, selectOfferProducts } from '@/lib/catalog';
+import { isCouponDay, nairobiDayName, useSiteSale } from '@/lib/siteSale';
 
-const WORLD_CUP_FINAL_DEADLINE = Date.UTC(2026, 6, 19, 23, 59, 59);
+/** Re-evaluates "is it a coupon day" every minute, so the page flips at midnight. */
+function useMinuteClock(): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return now;
+}
 
-const getNairobiTimestamp = () => {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Africa/Nairobi',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).formatToParts(now);
-  const values: Record<string, string> = {};
-  parts.forEach(({ type, value }) => {
-    values[type] = value;
-  });
-  return Date.UTC(
-    Number(values.year),
-    Number(values.month) - 1,
-    Number(values.day),
-    Number(values.hour),
-    Number(values.minute),
-    Number(values.second),
-  );
-};
+async function copyText(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch {
+    // Older browsers / blocked clipboard: fall back to a hidden textarea.
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
+}
 
-const getNairobiDayOfWeek = () => new Date(getNairobiTimestamp()).getUTCDay();
-
-const isWeekendDay = () => {
-  const day = getNairobiDayOfWeek();
-  return day === 5 || day === 6 || day === 0;
-};
-
-const getDayName = () => {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return days[getNairobiDayOfWeek()];
-};
-
+/**
+ * Sale page.
+ *
+ * Everything on it is controlled from the admin dashboard and updates in
+ * realtime:
+ *   - the Sale switch, title and message (Sale tab),
+ *   - the products (every product with the Offer switch on, the same ones the
+ *     homepage Offers row shows),
+ *   - the coupon code, shown here and only here, Friday to Sunday.
+ */
 const SalePage: React.FC = () => {
   const navigate = useNavigate();
-  const nowTs = getNairobiTimestamp();
-  const isWorldCupActive = nowTs < WORLD_CUP_FINAL_DEADLINE;
-  const weekend = isWeekendDay();
+  const now = useMinuteClock();
+  const { config, loaded } = useSiteSale();
+  const { products } = useCatalog();
+  const [copied, setCopied] = useState(false);
 
-  if (!isWorldCupActive) {
+  // The homepage row shows the first 12; the Sale page shows every offer.
+  const offers = useMemo(
+    () => selectOfferProducts(products, Math.max(products.length, 1)),
+    [products]
+  );
+
+  if (!loaded) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-[60vh] flex items-center justify-center" aria-busy="true">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-primary" />
+      </div>
+    );
+  }
+
+  if (!config || !config.isActive) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-md mx-auto">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
-              <span className="text-5xl">⚽</span>
-            </div>
             <h1 className="font-display text-3xl md:text-4xl font-bold mb-4">
-              World Cup Sale Has Ended
+              No sale at the moment
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
-              The FIFA World Cup 2026 Fan Zone sale is no longer active. Thank you for supporting your team!
+              There is no sale running right now. New offers appear here as soon as they start.
             </p>
-            <Button onClick={() => navigate('/')} className="inline-flex items-center gap-2 px-6 py-3 text-lg" size="lg">
-              ← Back to Homepage
+            <Button onClick={() => navigate('/')} size="lg">
+              Back to homepage
             </Button>
           </div>
         </div>
@@ -74,100 +85,88 @@ const SalePage: React.FC = () => {
     );
   }
 
-  const worldCupSaleTrophies = products.filter(p => p.category === 'sports-equipment' && p.subCategory === 'Trophies');
-  const worldCupShoes = products.filter(p => p.category === 'sports-equipment' && p.subCategory === 'Footwear');
-  const worldCupSaleProducts = [...worldCupSaleTrophies, ...worldCupShoes];
-  const regularSaleProducts = getSaleProducts();
+  const showCode = isCouponDay(now) && config.couponCode !== '';
+  const showCodeSoon = !isCouponDay(now) && config.couponCode !== '';
 
-  if (!weekend) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="container mx-auto px-4 text-center">
-          <div className="max-w-lg mx-auto">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
-              <span className="text-5xl">📅</span>
-            </div>
-            <h1 className="font-display text-3xl md:text-4xl font-bold mb-4">
-              Weekend Only
-            </h1>
-            <p className="text-lg text-muted-foreground mb-2">
-              Today is <strong>{getDayName()}</strong>
-            </p>
-            <p className="text-muted-foreground mb-8 text-lg">
-              Sorry, World Cup Special Deals are only available on <strong>Friday, Saturday, and Sunday</strong>.
-            </p>
-            <p className="text-muted-foreground mb-8">
-              Come back this weekend for exclusive deals on trophies and football shoes!
-            </p>
-            <div className="bg-muted rounded-xl p-6 mb-8">
-              <p className="text-sm text-muted-foreground mb-2">
-                💡 Use code <span className="font-mono font-bold text-primary">WORLDCUP</span> for extra 15% off during the weekend!
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Available Friday, Saturday & Sunday only
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button onClick={() => navigate('/')} className="inline-flex items-center gap-2 px-6 py-3 text-lg" size="lg">
-                ← Back to Homepage
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleCopy = async () => {
+    await copyText(config.couponCode);
+    setCopied(true);
+    toast.success('Code copied');
+    window.setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="page-transition min-h-screen">
-      <div className="bg-gradient-to-r from-emerald-600 via-green-500 to-blue-600 text-white py-8 md:py-12">
+      <div className="bg-gradient-to-r from-red-700 via-red-600 to-red-500 text-white py-8 md:py-12">
         <div className="container mx-auto px-4 text-center">
-          <span className="inline-block px-4 py-1 bg-white/20 rounded-full text-sm font-medium mb-4">
-            ⚽ WORLD CUP SALE ⚽
-          </span>
-          <h1 className="font-display text-3xl md:text-5xl font-bold">World Cup Special Deals</h1>
-          <p className="text-white/90 mt-3 max-w-lg mx-auto text-lg">
-            Trophies & Football Boots - Premium gear for the FIFA World Cup 2026 Fan Zone!
-          </p>
-          <div className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-white text-emerald-600 rounded-xl">
-            <span className="font-bold">Use code:</span>
-            <span className="font-mono font-bold text-xl">WORLDCUP</span>
+          <h1 className="font-display text-3xl md:text-5xl font-bold">{config.title}</h1>
+          {config.subtitle && (
+            <p className="text-white/90 mt-3 max-w-xl mx-auto text-lg">{config.subtitle}</p>
+          )}
+        </div>
+      </div>
+
+      {showCode && (
+        <div className="container mx-auto px-4 pt-6">
+          <div className="max-w-xl mx-auto rounded-2xl border-2 border-dashed border-primary/40 bg-card p-5 text-center">
+            <p className="text-sm text-muted-foreground">
+              Use this code at checkout for {config.discountPercent}% off
+            </p>
+            <div className="mt-3 flex items-center justify-center gap-3">
+              <span
+                className="font-mono text-3xl font-bold tracking-widest text-primary"
+                data-testid="coupon-code"
+              >
+                {config.couponCode}
+              </span>
+              <Button variant="outline" size="sm" onClick={handleCopy} aria-label="Copy coupon code">
+                {copied ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
+                {copied ? 'Copied' : 'Copy'}
+              </Button>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Valid Friday, Saturday and Sunday only.
+            </p>
           </div>
-          <p className="text-white/80 mt-3 text-sm">Valid Friday, Saturday & Sunday only!</p>
         </div>
-      </div>
+      )}
+
+      {showCodeSoon && (
+        <div className="container mx-auto px-4 pt-6">
+          <div className="max-w-xl mx-auto rounded-2xl bg-muted p-5 text-center">
+            <p className="font-semibold">Weekend coupon</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              The coupon code appears on this page every Friday, Saturday and Sunday.
+              Today is {nairobiDayName(now)}.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="container mx-auto px-4 py-6">
-        <PromoBanner
-          title="⚡ World Cup Sale - Best Deals!"
-          subtitle="Trophies & Football Shoes - Use code WORLDCUP for 15% off!"
-          code="WORLDCUP"
-          countdown
-        />
-      </div>
-
-      <div className="container mx-auto px-4 py-6">
-        <div className="bg-gradient-to-r from-emerald-600 to-blue-600 rounded-2xl p-6 text-white text-center">
-          <h2 className="font-display text-2xl md:text-3xl font-bold mb-2">⚽ WORLD CUP WEEKEND DEALS ⚽</h2>
-          <p className="text-white/90 mb-4">Trophies & Football Shoes - Premium gear for match day!</p>
-          <p className="text-sm bg-white/20 inline-block px-4 py-2 rounded-lg">
-            Don't forget to use code <strong className="text-xl">WORLDCUP</strong> at checkout for extra 15% off!
-          </p>
-        </div>
-        <div className="mt-6">
-          <ProductGrid
-            products={worldCupSaleProducts}
-            title="⚽ World Cup Sale - Trophies & Football Shoes"
-            subtitle={`${worldCupSaleProducts.length} items - Trophies & Boots`}
-            columns={2}
-          />
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-8 text-center">
-        <p className="text-lg font-semibold">
-          ⚽ Shop World Cup deals and use code <span className="text-emerald-600 font-bold">WORLDCUP</span> for extra 15% off!
-        </p>
+        {offers.length > 0 ? (
+          <>
+            <div className="mb-4">
+              <h2 className="font-display text-2xl font-bold">On offer now</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {offers.length} {offers.length === 1 ? 'item' : 'items'}. Tap any item to go
+                straight to checkout.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+              {offers.map((product) => (
+                <OfferProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="py-12 text-center">
+            <h2 className="font-display text-2xl font-bold">New offers are on the way</h2>
+            <p className="mt-2 text-muted-foreground">
+              Products on offer will appear here as soon as they are added. Check back soon.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

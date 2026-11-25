@@ -3,9 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Minus, Plus, ShoppingBag, ChevronRight, ArrowLeft, Tag } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { formatPrice } from '@/data/products';
+import { formatPrice } from '@/lib/priceHelpers';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { validateSaleCoupon, couponMessage } from '@/lib/siteSale';
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,28 +15,25 @@ const CartPage: React.FC = () => {
   const [promoApplied, setPromoApplied] = React.useState(false);
   const [promoError, setPromoError] = React.useState('');
 
-  const handleApplyPromo = () => {
-    // Weekend flash sale: Only Friday (5), Saturday (6), and Sunday (0)
-    // Using Kenya timezone (UTC+3)
-    const now = new Date();
-    const kenyaTime = new Date(now.getTime() + 3 * 60 * 60 * 1000);
-    const day = kenyaTime.getDay();
-    const isWeekend = day === 5 || day === 6 || day === 0;
-    
+  const [promoPercent, setPromoPercent] = React.useState(0);
+  const [promoChecking, setPromoChecking] = React.useState(false);
+
+  // The admin sets the code and percentage (Sale tab); the server checks both,
+  // and that today is Friday, Saturday or Sunday in Nairobi.
+  const handleApplyPromo = async () => {
     setPromoError('');
-    
-    if (promoCode.toUpperCase() === '332211') {
-      if (isWeekend) {
-        setPromoApplied(true);
-      } else {
-        setPromoError('Code 332211 is only valid on Friday, Saturday, and Sunday');
-      }
+    setPromoChecking(true);
+    const result = await validateSaleCoupon(promoCode.trim());
+    setPromoChecking(false);
+    if (result.valid) {
+      setPromoPercent(result.percent);
+      setPromoApplied(true);
     } else {
-      setPromoError('Invalid promo code');
+      setPromoError(couponMessage(result.reason));
     }
   };
 
-  const discount = promoApplied ? subtotal * 0.15 : 0;
+  const discount = promoApplied ? subtotal * (promoPercent / 100) : 0;
   const finalTotal = total - discount;
 
   if (items.length === 0) {
@@ -210,13 +208,15 @@ const CartPage: React.FC = () => {
                   <Button
                     variant="outline"
                     onClick={handleApplyPromo}
-                    disabled={promoApplied || !promoCode}
+                    disabled={promoApplied || !promoCode.trim() || promoChecking}
                   >
-                    Apply
+                    {promoChecking ? 'Checking...' : 'Apply'}
                   </Button>
                 </div>
                 {promoApplied && (
-                  <p className="text-success text-sm mt-2">✓ 332211 applied - 15% off!</p>
+                  <p className="text-success text-sm mt-2">
+                    Code {promoCode.trim().toUpperCase()} applied: {promoPercent}% off
+                  </p>
                 )}
                 {promoError && (
                   <p className="text-destructive text-sm mt-2">{promoError}</p>
@@ -230,7 +230,7 @@ const CartPage: React.FC = () => {
                 </div>
                 {promoApplied && (
                   <div className="flex justify-between text-success">
-                    <span>Discount (15%)</span>
+                    <span>Discount ({promoPercent}%)</span>
                     <span>-{formatPrice(discount)}</span>
                   </div>
                 )}

@@ -29,12 +29,14 @@ export type AdminAction =
   | 'category.create'
   | 'category.update'
   | 'category.delete'
+  | 'popup.update'
+  | 'sale.update'
   | 'session.sign_out'
   | 'admin.terms_accepted';
 
 export interface AdminLogEntry {
   action: AdminAction;
-  entityType?: 'product' | 'category' | 'session';
+  entityType?: 'product' | 'category' | 'session' | 'popup' | 'sale';
   entityId?: string | null;
   entityLabel?: string | null;
   details?: Record<string, unknown>;

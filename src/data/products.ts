@@ -9687,30 +9687,15 @@ export const googleReviews: Review[] = [
 ];
 
 // ============================================================================
-// WEEKEND OFFERS
-// ============================================================================
-
-export const weekendOffers = [
-  {
-    id: 'offer1',
-    title: 'Weekend Flash Sale',
-    subtitle: 'Up to 75% off + extra 15% off with code 332211',
-    code: '332211',
-    bgColor: 'from-primary to-accent',
-  },
-];
-
-// ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
-export const formatPrice = (price: number): string => {
-  return `KES ${price.toLocaleString('en-KE')}`;
-};
-
-export const calculateDiscount = (original: number, current: number): number => {
-  return Math.round(((original - current) / original) * 100);
-};
+/**
+ * Re-exported from src/lib/priceHelpers.ts so that importing formatPrice /
+ * calculateDiscount from here does not pull in the entire 276 KB products.ts
+ * catalogue. Storefront code should import from '@/lib/priceHelpers' instead.
+ */
+export { formatPrice, calculateDiscount } from '@/lib/priceHelpers';
 
 export const getProductsByCategory = (category: Category): Product[] => {
   return products.filter(p => p.category === category);

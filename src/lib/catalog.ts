@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import {
@@ -282,3 +283,42 @@ export function useInvalidateCatalog() {
   return () => queryClient.invalidateQueries({ queryKey: CATALOG_QUERY_KEY });
 }
 
+const CRAWLER_PATTERN =
+  /googlebot|bingbot|baiduspider|facebookexternalhit|twitterbot|linkedinbot|whatsapp|pinterest|applebot/i;
+
+/**
+ * Keeps the catalogue in step with the database in realtime.
+ *
+ * When an admin saves a product (price, stock, the Offer switch...) Supabase
+ * tells every open tab, which re-reads the catalogue. The homepage Offers row
+ * and the Sale page both read from it, so a product put on offer appears on
+ * both at once, and one taken off disappears from both.
+ *
+ * Changes are batched (a bulk edit sends many events) into a single re-read.
+ * Crawlers are skipped. If the realtime connection is unavailable the site
+ * still works: pages re-read on load as before.
+ */
+export function useLiveCatalog(enabled = true): void {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!enabled) return;
+    if (typeof navigator !== 'undefined' && CRAWLER_PATTERN.test(navigator.userAgent ?? '')) return;
+
+    let timer: number | undefined;
+    const channel = supabase
+      .channel('catalog-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          void queryClient.invalidateQueries({ queryKey: CATALOG_QUERY_KEY });
+        }, 600);
+      })
+      .subscribe();
+
+    return () => {
+      window.clearTimeout(timer);
+      void supabase.removeChannel(channel);
+    };
+  }, [enabled, queryClient]);
+}

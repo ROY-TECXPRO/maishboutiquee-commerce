@@ -35,7 +35,7 @@ const HelpSupportPage: React.FC = () => {
     },
     {
       question: 'How do I use a promo code?',
-      answer: 'Enter your promo code in the "Promo Code" field at checkout and click "Apply". Note: Promo codes are only valid on Friday, Saturday, and Sunday.',
+      answer: 'Open the Sale page to see the current promo code. It is shown there from Friday to Sunday only. Enter it in the "Promo Code" field at checkout and click "Apply".',
     },
     {
       question: 'Do you offer delivery nationwide?',

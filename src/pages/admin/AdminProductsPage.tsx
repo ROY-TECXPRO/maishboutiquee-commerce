@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useInvalidateCatalog } from '@/lib/catalog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -23,10 +24,11 @@ import {
   AdminTermsDialog,
   hasAcceptedAdminTerms,
 } from '@/components/admin/AdminTermsDialog';
-import { useInvalidateCatalog } from '@/lib/catalog';
 import { logAdminActivity, canViewActivityLog } from '@/lib/adminActivity';
 import { AdminActivityLog } from '@/components/admin/AdminActivityLog';
 import { AdminOrdersSection } from '@/components/admin/AdminOrdersSection';
+import { AdminPopupSection } from '@/components/admin/AdminPopupSection';
+import { AdminSaleSection } from '@/components/admin/AdminSaleSection';
 import type { ProductRecord } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -42,7 +44,7 @@ import {
 } from '@/components/ui/table';
 import {
   Loader2, Save, LogOut, Search, Plus, Pencil, Trash2, RefreshCw, PackageX, ImageOff,
-  LayoutGrid, ListTree, Check, Home, ScrollText, History, Percent, Package,
+  LayoutGrid, ListTree, Check, Home, ScrollText, History, Percent, Package, Megaphone, Tag,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
@@ -61,7 +63,7 @@ interface EditableRowState {
 }
 
 export default function AdminProductsPage() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const invalidateCatalog = useInvalidateCatalog();
   /** The terms must be accepted before any admin tooling is usable. */
@@ -72,7 +74,7 @@ export default function AdminProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   /** 'categories' shows every category; 'products' shows items; 'orders'
    *  is the customer order-management section. */
-  const [section, setSection] = useState<'categories' | 'products' | 'orders' | 'activity'>('categories');
+  const [section, setSection] = useState<'categories' | 'products' | 'orders' | 'popup' | 'sale' | 'activity'>('categories');
   const [edits, setEdits] = useState<Record<string, EditableRowState>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
 
@@ -468,7 +470,11 @@ export default function AdminProductsPage() {
                 ? 'Admin Activity'
                 : section === 'orders'
                   ? 'Orders Management'
-                  : 'Product Management'}
+                  : section === 'popup'
+                    ? 'Storefront Popup'
+                    : section === 'sale'
+                      ? 'Sale Page'
+                    : 'Product Management'}
           </h1>
           <div className="flex flex-wrap items-center gap-2">
             <RoleBadge verbose />
@@ -548,6 +554,36 @@ export default function AdminProductsPage() {
           <Package className="h-4 w-4" />
           Orders
         </button>
+        {/* The popup reaches every visitor, so only administrators get the tab
+            (the database enforces the same rule: admin-only writes). */}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setSection('popup')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              section === 'popup'
+                ? 'border-primary text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Megaphone className="h-4 w-4" />
+            Popup
+          </button>
+        )}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setSection('sale')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              section === 'sale'
+                ? 'border-primary text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Tag className="h-4 w-4" />
+            Sale
+          </button>
+        )}
         {/* Only the main admin may read the log, so the tab is hidden entirely
             for anyone else rather than leading to a "not permitted" panel. */}
         {canViewActivityLog(user?.email) && (
@@ -571,6 +607,12 @@ export default function AdminProductsPage() {
 
       {/* ---- Customer order management ---- */}
       {section === 'orders' && <AdminOrdersSection />}
+
+      {/* ---- Seasonal popup shown to every visitor (admins only) ---- */}
+      {section === 'popup' && isAdmin && <AdminPopupSection />}
+
+      {/* ---- Sale page + weekend coupon (admins only) ---- */}
+      {section === 'sale' && isAdmin && <AdminSaleSection />}
 
       {/* ---- All website categories; click one to see its items ---- */}
       {section === 'categories' && (

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Zap } from 'lucide-react';
 import type { Product, ProductColor, Size } from '@/types';
-import { formatPrice, calculateDiscount } from '@/data/products';
+import { formatPrice, calculateDiscount } from '@/lib/priceHelpers';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 

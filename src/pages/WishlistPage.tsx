@@ -4,7 +4,7 @@ import { Heart, Trash2, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWishlist } from '@/context/WishlistContext';
 import { useCart } from '@/context/CartContext';
-import { formatPrice } from '@/data/products';
+import { formatPrice } from '@/lib/priceHelpers';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 

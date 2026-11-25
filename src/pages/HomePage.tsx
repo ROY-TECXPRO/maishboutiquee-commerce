@@ -68,8 +68,8 @@ const campaignSlides: CampaignSlide[] = [
     secondaryLabel: 'Browse Hotel Supplies',
     primaryTo: '/category/uniform-center',
     secondaryTo: '/category/hotel-supplies',
-    image: HERO_IMAGE,
-    imageAlt: 'Hotel uniforms, beddings and curtains at Maish Fashion Boutique',
+    image: '/images/Festive Family Fashion Portrait.png',
+    imageAlt: 'Festive Family Fashion Portrait at Maish Fashion Boutique',
     accent: 'from-emerald-700 via-teal-700 to-cyan-700',
   },
   {
@@ -79,8 +79,8 @@ const campaignSlides: CampaignSlide[] = [
     subheadline: 'Fashion, Mattresses, Uniforms, Hotel Supplies, Bedding, Curtains, Bags, Footwear and More.',
     primaryLabel: 'Explore Collections',
     primaryTo: '/categories',
-    image: HERO_IMAGE,
-    imageAlt: 'Maish Fashion Boutique mega store product collections',
+    image: '/images/Festive Family Christmas Sale Banner.png',
+    imageAlt: 'Festive Family Christmas Sale Banner at Maish Fashion Boutique',
     accent: 'from-primary via-accent to-amber-400',
   },
 ];

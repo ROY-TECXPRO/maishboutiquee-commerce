@@ -21,7 +21,7 @@ import {
 import { useOrders, Order, OrderItem } from '@/context/OrderContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { formatPrice } from '@/data/products';
+import { formatPrice } from '@/lib/priceHelpers';
 import {
   statusLabel,
   statusBadgeClass,

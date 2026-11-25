@@ -79,8 +79,8 @@ export function AdminTermsDialog({ open, onAccepted }: AdminTermsDialogProps) {
   }
 
   return (
-    <Dialog open={open}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+    <Dialog open={open} aria-describedby="admin-terms-description">
+      <DialogContent id="admin-terms-description" className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Product, ProductImage } from '@/types';
-import { formatPrice, calculateDiscount } from '@/data/products';
+import { formatPrice, calculateDiscount } from '@/lib/priceHelpers';
 import { useWishlist } from '@/context/WishlistContext';
 import { cn } from '@/lib/utils';
 

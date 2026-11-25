@@ -45,9 +45,12 @@
     <meta name="twitter:image:alt" content="Maish Fashion Boutique" />
     
     <!-- Icons -->
-    <link rel="icon" type="image/webp" href="/App-icon.webp" />
-    <link rel="apple-touch-icon" href="/App-icon.webp" />
-    <link rel="mask-icon" href="/App-icon.webp" color="#d84a1b" />
+    <!-- Updated app icon (square, sized files). The ?v= number makes browsers
+         fetch the new icon instead of a cached copy: raise it when the icon changes. -->
+    <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png?v=2" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?v=2" />
     <!-- No manifest link is written here on purpose: vite-plugin-pwa
          generates /manifest.webmanifest from the `manifest` block in
          vite.config.ts and injects the link automatically. A second,
@@ -67,15 +70,22 @@
     <link rel="preconnect" href="https://images.unsplash.com" />
     
     <!-- Hero Image Preload - Critical for LCP -->
-    <link rel="preload" as="image" href="/images/HERO-IMAGE.webp" fetchpriority="high" />
+    <link rel="preload" as="image" href="/images/Festive Family Fashion Portrait.png" fetchpriority="high" />
     
-    <!-- Google Analytics -->
+    <!-- Google Analytics - loaded after idle to avoid blocking render -->
     <script defer src="https://www.googletagmanager.com/gtag/js?id=G-LZGZ2XTVCH"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-LZGZ2XTVCH');
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          gtag('js', new Date());
+          gtag('config', 'G-LZGZ2XTVCH');
+        });
+      } else {
+        gtag('js', new Date());
+        gtag('config', 'G-LZGZ2XTVCH');
+      }
     </script>
   </head>
   <body>

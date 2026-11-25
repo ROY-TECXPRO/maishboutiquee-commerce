@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Heart, Share2, Minus, Plus, ShoppingBag, Check, Star, Truck, RefreshCw, Shield, Loader2 } from 'lucide-react';
-import { formatPrice, calculateDiscount } from '@/data/products';
+import { formatPrice, calculateDiscount } from '@/lib/priceHelpers';
 import { useCatalog, findById } from '@/lib/catalog';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -236,6 +236,11 @@ const ProductDetailPage: React.FC = () => {
                     src={product.images[selectedImage]?.src}
                     alt={product.images[selectedImage]?.alt || product.name}
                     className="w-full h-full object-contain"
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
+                    width="800"
+                    height="800"
                     style={{
                       transform: isZoomed ? 'scale(2)' : 'scale(1)',
                       transformOrigin: `${mousePosition.x}% ${mousePosition.y}%`,

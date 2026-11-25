@@ -120,7 +120,7 @@ export const WeekendSlider: React.FC = () => {
                 <Link to="/sale" className="group block">
                   <div className="relative rounded-lg overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 transform group-hover:-translate-y-0.5">
                     <div className="aspect-[2/3] md:aspect-[3/4] lg:aspect-[4/5] overflow-hidden">
-                      <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" width="400" height="533" />
                     </div>
                     {item.discount && (
                       <div className="absolute top-1 right-1 md:top-2 md:right-2 bg-red-600 text-white text-[9px] md:text-xs font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-full">

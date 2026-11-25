@@ -10,45 +10,10 @@ import { categories } from '@/data/products';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
-const WORLD_CUP_FINAL_DEADLINE = Date.UTC(2026, 6, 19, 23, 59, 59);
-
-// Move Intl.DateTimeFormat instantiation outside the function to reuse the formatter instance
-const nairobiFormatter = new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'Africa/Nairobi',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-});
-
-const getNairobiTimestamp = () => {
-  const now = new Date();
-  const parts = nairobiFormatter.formatToParts(now);
-  const values: Record<string, string> = {};
-  parts.forEach(({ type, value }) => {
-    values[type] = value;
-  });
-
-  return Date.UTC(
-    Number(values.year),
-    Number(values.month) - 1,
-    Number(values.day),
-    Number(values.hour),
-    Number(values.minute),
-    Number(values.second),
-  );
-};
-
 export const DesktopHeader: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
-  // Compute once per render — the formatter is now a module-level constant
-  const nowTs = getNairobiTimestamp();
-  const showWorldCupBadge = nowTs < WORLD_CUP_FINAL_DEADLINE;
   const { itemCount } = useCart();
   const { items: wishlistItems } = useWishlist();
   const { user, isStaff } = useAuth();
@@ -61,11 +26,6 @@ export const DesktopHeader: React.FC = () => {
 
   return (
     <>
-      {/* Promo Banner */}
-      <div className="promo-banner hidden md:block">
-        <p>🎉 Weekend Flash Sale: Use code <strong>332211</strong> for 15% off - Friday, Saturday & Sunday only!</p>
-      </div>
-
       {/* Main Header */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-4">
@@ -119,16 +79,6 @@ export const DesktopHeader: React.FC = () => {
               >
                 Home
               </NavLink>
-
-              {showWorldCupBadge && (
-                <Link
-                  to="/sale"
-                  className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 px-3 py-1.5 text-xs font-bold text-white shadow-lg shadow-emerald-500/25 transition-transform hover:scale-105"
-                >
-                  <span className="animate-pulse">⚽</span>
-                  World Cup Sale <span className="hidden sm:inline">(Weekend)</span>
-                </Link>
-              )}
 
               <div
                 className="relative"
@@ -188,7 +138,7 @@ export const DesktopHeader: React.FC = () => {
                   isActive ? 'bg-sale text-white' : 'text-sale hover:bg-sale/10'
                 )}
               >
-                Sale 🔥
+                Sale
               </NavLink>
 
               <NavLink
@@ -329,16 +279,6 @@ export const DesktopHeader: React.FC = () => {
           >
             <div className="container px-4 py-4 max-h-[70vh] overflow-y-auto">
               <nav className="space-y-1">
-                 {showWorldCupBadge && (
-                   <Link
-                     to="/sale"
-                     className="flex items-center justify-between rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20"
-                     onClick={() => setIsMenuOpen(false)}
-                   >
-                     <span>⚽ World Cup Sale</span>
-                     <span className="text-xs opacity-90">(Weekend)</span>
-                   </Link>
-                 )}
                 {categories.map(cat => (
                   <Link
                     key={cat.id}
@@ -380,7 +320,7 @@ export const DesktopHeader: React.FC = () => {
                   className="flex items-center gap-3 p-3 rounded-lg bg-sale/10 text-sale font-medium"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  🔥 Weekend Sale - Up to 40% Off
+                  Sale
                 </Link>
                 <button
                   onClick={() => {
