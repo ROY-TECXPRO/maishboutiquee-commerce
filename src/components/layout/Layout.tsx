@@ -42,7 +42,7 @@ export const Layout: React.FC = () => {
       <BottomNav />
       <InstallPrompt />
       <UpdatePrompt />
-      {location.pathname === '/' && <FloatingWhatsApp />}
+      <FloatingWhatsApp />
     </div>
   );
 };
