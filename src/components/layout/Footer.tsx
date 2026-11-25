@@ -102,7 +102,7 @@ export const Footer: React.FC = () => {
     { icon: Youtube, href: 'https://youtube.com/@maishboutique', label: 'YouTube' },
     { icon: TikTokIcon, href: 'https://www.tiktok.com/@maish_boutique1?is_from_webapp=1&sender_device=pc', label: 'TikTok' },
     { icon: Linkedin, href: 'https://linkedin.com/company/maish-boutique', label: 'LinkedIn' },
-    { icon: WhatsAppChannelIcon, href: 'https://wa.me/254799921036', label: 'WhatsApp' },
+    { icon: '/images/iconwhatsaap.png', href: 'https://wa.me/254799921036', label: 'WhatsApp', isImage: true },
   ];
 
   return (
@@ -223,7 +223,19 @@ export const Footer: React.FC = () => {
                     aria-label={social.label}
                     className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors touch-manipulation"
                   >
-                    <social.icon className="w-5 h-5" />
+                    {social.isImage ? (
+                      <img
+                        src={social.icon}
+                        alt={social.label}
+                        width="24"
+                        height="24"
+                        className="w-6 h-6"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <social.icon className="w-5 h-5" />
+                    )}
                   </a>
                 ))}
               </div>
